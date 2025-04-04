@@ -18,6 +18,11 @@ namespace MSI_refactor_attempt
 
 
         static Worker() {
+            if (File.Exists("testy")) {
+                string list = File.ReadAllText("testy");
+                PREFERENCES_LIST = JsonConvert.DeserializeObject<List<Preferences>>(list);
+                if (PREFERENCES_LIST.Count != Schedule.WORKER_COUNT) File.Delete("testy");
+            }
             if (!File.Exists("testy")) {
                 PREFERENCES_LIST = new();
                 for (int i = 0; i < Schedule.WORKER_COUNT; i++) {
@@ -25,10 +30,6 @@ namespace MSI_refactor_attempt
                 }
                 string s = JsonConvert.SerializeObject(PREFERENCES_LIST);
                 File.WriteAllText("testy", s);
-            }
-            else {
-                string list = File.ReadAllText("testy");
-                PREFERENCES_LIST = JsonConvert.DeserializeObject<List<Preferences>>(list);
             }
         }
 
@@ -66,7 +67,7 @@ namespace MSI_refactor_attempt
             this.fitness = 1;
             for (int day = 0; day < Schedule.WEEKDAYS; day++) {
                 WorkdayFavorabilities[day] = FindFavorability(AssignedWorkdays[day], day);
-                this.fitness += WorkdayFavorabilities[day] * MAX_FITNESS / Schedule.WEEKDAYS;
+                this.fitness += WorkdayFavorabilities[day] * (MAX_FITNESS-1) / Schedule.WEEKDAYS;
             }
         }
 

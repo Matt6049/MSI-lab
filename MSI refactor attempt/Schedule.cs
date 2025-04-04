@@ -9,13 +9,12 @@ namespace MSI_refactor_attempt
 {
     public class Schedule
     {
-        public const int WORKER_COUNT = 5;
+        public const int WORKER_COUNT = 50;
         public const int WEEKDAYS = 7;
         const int MUTATION_ATTEMPTS = 10;
         const double RANDOM_MUTATION_RATIO = 0.25;
         const double POINT_BY_POINT_RATIO = 0.5;
         static readonly double[] SHIFT_PROPORTIONS = [0.6, 1, 1, 1, 1, 0.6, 0.4];
-
         static readonly int[] NEEDED_SHIFTS;
 
         static Schedule() {
