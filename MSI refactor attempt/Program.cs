@@ -28,7 +28,7 @@
             DateTime time1 = DateTime.Now;
             rand = new();
             currentPopulation = new Schedule[SCHEDULE_COUNT];
-            elitismCarryoverCount = (int)Math.Ceiling(Schedule.WORKER_COUNT * ELITISM_RATIO);
+            elitismCarryoverCount = (int)Math.Ceiling(SCHEDULE_COUNT * ELITISM_RATIO);
             currentGeneration = 0;
 
             for (int i = 0; i < SCHEDULE_COUNT; i++) {
@@ -41,7 +41,6 @@
                 PrintPopulation();
                 children = new Schedule[SCHEDULE_COUNT];
                 Schedule[] bestParents = currentPopulation.OrderBy(sched => sched.CalculateScheduleFitness()).TakeLast(elitismCarryoverCount).ToArray();
-
 
                 for (int i = 0; i < elitismCarryoverCount; i++) {
                     children[i] = bestParents[i];
