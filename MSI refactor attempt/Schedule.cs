@@ -1,17 +1,10 @@
-﻿using MSI_refactor_attempt;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MSI_refactor_attempt
+﻿namespace MSI_refactor_attempt
 {
     public class Schedule
     {
         public const int WORKER_COUNT = 50;
         public const int WEEKDAYS = 7;
-        const int MUTATION_ATTEMPTS = 10;
+        const int MUTATION_RETRIES = 10;
         const double RANDOM_MUTATION_RATIO = 0.25;
         const double POINT_BY_POINT_RATIO = 0.5;
         static readonly double[] SHIFT_PROPORTIONS = [0.6, 1, 1, 1, 1, 0.6, 0.4];
@@ -46,11 +39,11 @@ namespace MSI_refactor_attempt
                 Worker[] mutationCandidates = WorkersTable.Where(worker => worker.AssignedWorkdays[day] == mutationType).ToArray();
                 if (mutationCandidates.Length == 0) continue;
 
-                int attempts = MUTATION_ATTEMPTS;
-                while (NEEDED_SHIFTS[day] != CurrentShifts[day] && attempts > 0) {
+                int retriesRemaining = MUTATION_RETRIES;
+                while (NEEDED_SHIFTS[day] != CurrentShifts[day] && retriesRemaining > 0) {
                     int worker = Rand.Next(mutationCandidates.Length);
                     mutationCandidates[worker].AttemptMutation(day);
-                    attempts--;
+                    retriesRemaining--;
                 }
             }
         }

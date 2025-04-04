@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace MSI_refactor_attempt {
+﻿namespace MSI_refactor_attempt {
     internal class Program {
         public const int GENERATIONS_COUNT = 250;
         const int SCHEDULE_COUNT = 50;
