@@ -5,14 +5,15 @@ namespace MSI_refactor_attempt {
         public const int GENERATIONS_COUNT = 100;
         const int SCHEDULE_COUNT = 500;
         const int PARENT_COUNT = 3;
-        const double 
+        const double ELITISM_RATIO = 0.05;
 
         public static int currentGeneration = 0;
         static Schedule[] currentPopulation;
         static Schedule[] children;
         static Random rand;
+        static int elitismCarryoverCount;
 
-        static void printPopulation() {
+        static void PrintPopulation() {
             double max = currentPopulation.Max(Sched => Sched.CalculateScheduleFitness());
             double avg = currentPopulation.Average(Sched => Sched.CalculateScheduleFitness());
 
@@ -28,6 +29,8 @@ namespace MSI_refactor_attempt {
             DateTime time1 = DateTime.Now;
             rand = new();
             currentPopulation = new Schedule[SCHEDULE_COUNT];
+            elitismCarryoverCount = (int)Math.Ceiling(Schedule.WORKER_COUNT * ELITISM_RATIO);
+
             for(int i=0; i<SCHEDULE_COUNT; i++) {
                 currentPopulation[i] = new();
                 currentPopulation[i].RandomizeWorkers();
@@ -35,9 +38,16 @@ namespace MSI_refactor_attempt {
 
 
             while(currentGeneration < GENERATIONS_COUNT) {
-                printPopulation();
+                PrintPopulation();
                 children = new Schedule[SCHEDULE_COUNT];
-                for(int i=0; i<SCHEDULE_COUNT; i++) {
+                Schedule[] bestParents = currentPopulation.OrderBy(sched => sched.CalculateScheduleFitness()).TakeLast(elitismCarryoverCount).ToArray();
+
+                
+                for(int i=0; i<elitismCarryoverCount; i++) {
+                    children[i] = bestParents[i];
+                }
+
+                for(int i=elitismCarryoverCount; i<SCHEDULE_COUNT; i++) {
                     List<int> candidates = Enumerable.Range(0, SCHEDULE_COUNT).ToList();
                     Schedule[] parents = new Schedule[PARENT_COUNT];
                     for(int j = 0; j < PARENT_COUNT; j++) {
