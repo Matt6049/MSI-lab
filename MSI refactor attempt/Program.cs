@@ -1,6 +1,6 @@
 ﻿namespace MSI_refactor_attempt {
     internal class Program {
-        public const int GENERATIONS_COUNT = 250;
+        public const int GENERATION_COUNT = 250;
         const int SCHEDULE_COUNT = 50;
         const int PARENT_COUNT = 3;
         const double ELITISM_RATIO = 0.05;
@@ -29,7 +29,7 @@
             rand = new();
             currentPopulation = new Schedule[SCHEDULE_COUNT];
             elitismCarryoverCount = (int)Math.Ceiling(SCHEDULE_COUNT * ELITISM_RATIO);
-            currentGeneration = 0;
+            currentGeneration = 1;
 
             for (int i = 0; i < SCHEDULE_COUNT; i++) {
                 currentPopulation[i] = new();
@@ -37,7 +37,7 @@
             }
 
 
-            while (currentGeneration < GENERATIONS_COUNT) {
+            while (currentGeneration <= GENERATION_COUNT) {
                 PrintPopulation();
                 children = new Schedule[SCHEDULE_COUNT];
                 Schedule[] bestParents = currentPopulation.OrderBy(sched => sched.CalculateScheduleFitness()).TakeLast(elitismCarryoverCount).ToArray();

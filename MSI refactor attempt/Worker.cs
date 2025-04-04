@@ -57,6 +57,8 @@ namespace MSI_refactor_attempt
         public bool AttemptMutation(int day) {
             if(Rand.NextDouble() < (1 - WorkdayFavorabilities[day])*MUTATION_CHANCE) {
                 AssignedWorkdays[day] = !AssignedWorkdays[day];
+                //okazja na poprawę: dodawanie lub odejmowanie z liczb zmian, nielubianych zmian itd zamiast przeliczania od nowa
+                RecountShifts();
                 RecalculateFavorability();
                 return true;
             }
