@@ -1,13 +1,21 @@
 ﻿using Genetic_Algorithm;
-using CFG = Genetic_Algorithm.Configs.ScheduleConfig;
-using pCFG = Genetic_Algorithm.Configs;
+using CFG = Genetic_Algorithm.Config.ScheduleConfig;
+using pCFG = Genetic_Algorithm.Config;
 
 namespace Genetic_Algorithm {
 
-    public static class Configs {
+    public static class Config {
         
         public const int WEEKDAYS = 7;
         public static int WORKER_COUNT = 50;
+        public static int GENERATION_COUNT = 250;
+
+        public static class ProgramConfig {
+            public static bool PRINT_GENERATION_STATISTICS = false;
+            public static int SCHEDULE_COUNT = 50;
+            public static int PARENT_COUNT = 3;
+            public static double ELITISM_RATIO = 0.05;
+        }
 
         public static class ScheduleConfig {
             public static double RANDOM_MUTATION_RATIO = 0.25;

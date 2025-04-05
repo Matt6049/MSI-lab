@@ -1,5 +1,5 @@
-﻿using CFG = Genetic_Algorithm.Configs.ScheduleConfig;
-using pCFG = Genetic_Algorithm.Configs;
+﻿using CFG = Genetic_Algorithm.Config.ScheduleConfig;
+using pCFG = Genetic_Algorithm.Config;
 namespace Genetic_Algorithm
 {
     public class Schedule
@@ -26,8 +26,8 @@ namespace Genetic_Algorithm
             //TODO: modyfikacja metod mutacyjnych, aby usunąć szansę nieskończoności prób
             //być może zmiana obliczeń fitnessu wedle feasibility
             RandomMutations();
-            if(Program.currentGeneration % Program.GENERATION_COUNT/10 == 0
-                || Program.currentGeneration > Program.GENERATION_COUNT*0.9) FeasibilityMutations();
+            if(Program.currentGeneration % pCFG.GENERATION_COUNT/10 == 0
+                || Program.currentGeneration > pCFG.GENERATION_COUNT*0.9) FeasibilityMutations();
         }
 
         public Schedule() {
@@ -55,7 +55,7 @@ namespace Genetic_Algorithm
         }
 
         void RandomMutations() {
-            int mutationCount = (int)Math.Floor(Program.currentGeneration/Program.GENERATION_COUNT * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
+            int mutationCount = (int)Math.Floor(Program.currentGeneration/ pCFG.GENERATION_COUNT * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
             for (int i = 0; i < mutationCount; i++) {
                 int worker = Program.Rand.Next(WorkersTable.Length);
                 int day = Program.Rand.Next(7);

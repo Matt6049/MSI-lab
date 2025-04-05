@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
-using pCFG = Genetic_Algorithm.Configs;
-using CFG = Genetic_Algorithm.Configs.WorkerConfig;
+using pCFG = Genetic_Algorithm.Config;
+using CFG = Genetic_Algorithm.Config.WorkerConfig;
 
 namespace Genetic_Algorithm
 {
@@ -48,7 +48,7 @@ namespace Genetic_Algorithm
         static bool[] GetRandomShifts() {
             bool[] shifts = new bool[pCFG.WEEKDAYS];
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                if (Program.Rand.NextDouble() < (double)(CFG.PreferencesConfig.MAX_WORKDAYS) / pCFG.WEEKDAYS) {
+                if (Program.Rand.NextDouble() < (double)(CFG.MAX_WORKDAYS) / pCFG.WEEKDAYS) {
                     shifts[day] = true;
                 }
             }
