@@ -1,23 +1,10 @@
 ﻿using Newtonsoft.Json;
 using pCFG = Genetic_Algorithm.Configs;
+using CFG = Genetic_Algorithm.Configs.WorkerConfig;
 
 namespace Genetic_Algorithm
 {
     public class Worker {
-        
-
-
-        const double MAX_FITNESS = 8;
-        const double OFFDAY_WEIGHT = 0.5;
-        const double OVERWORK_WEIGHT = 0.3;
-        const double DISLIKED_DAY_WEIGHT = 0.2;
-        const double MUTATION_CHANCE = 0.2;
-
-        public const int MAX_WORKDAYS = 5;
-        const int MAX_DISLIKED_DAYS = 3;
-        const double DISLIKED_CHANCE = 0.65;
-        const double OFFDAY_CHANCE = 0.2;
-
         static List<Preferences> PREFERENCES_LIST {get;}
 
 
@@ -61,7 +48,7 @@ namespace Genetic_Algorithm
         static bool[] GetRandomShifts() {
             bool[] shifts = new bool[pCFG.WEEKDAYS];
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                if (Program.Rand.NextDouble() < (double)(MAX_WORKDAYS) / pCFG.WEEKDAYS) {
+                if (Program.Rand.NextDouble() < (double)(CFG.PreferencesConfig.MAX_WORKDAYS) / pCFG.WEEKDAYS) {
                     shifts[day] = true;
                 }
             }
@@ -69,7 +56,7 @@ namespace Genetic_Algorithm
         }
 
         public bool AttemptMutation(int day) {
-            if(Program.Rand.NextDouble() < (1 - WorkdayFavorabilities[day])*MUTATION_CHANCE) {
+            if(Program.Rand.NextDouble() < (1 - WorkdayFavorabilities[day])* CFG.MUTATION_CHANCE) {
                 AssignedShifts[day] = !AssignedShifts[day];
                 //okazja na poprawę: dodawanie lub odejmowanie z liczb zmian, nielubianych zmian itd zamiast przeliczania od nowa
                 RecountShifts();
@@ -83,16 +70,16 @@ namespace Genetic_Algorithm
             this.fitness = 1;
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                 WorkdayFavorabilities[day] = FindFavorability(AssignedShifts[day], day);
-                this.fitness += WorkdayFavorabilities[day] * (MAX_FITNESS-1) / pCFG.WEEKDAYS;
+                this.fitness += WorkdayFavorabilities[day] * (CFG.MAX_FITNESS -1) / pCFG.WEEKDAYS;
             }
         }
 
         double FindFavorability(bool proposedShiftState, int day) {
 
             double weight = 1;
-            weight -= OffDayPenalty(day)*OFFDAY_WEIGHT;
-            weight -= OverworkPenalty(day)*OVERWORK_WEIGHT;
-            weight -= DislikedPenalty(day)*DISLIKED_DAY_WEIGHT;
+            weight -= OffDayPenalty(day)* CFG.OFFDAY_WEIGHT;
+            weight -= OverworkPenalty(day)* CFG.OVERWORK_WEIGHT;
+            weight -= DislikedPenalty(day)* CFG.DISLIKED_DAY_WEIGHT;
 
             return proposedShiftState ? weight : 1 - weight;
         }
@@ -107,8 +94,8 @@ namespace Genetic_Algorithm
 
 
         double OverworkPenalty(int day) {
-            if (AssignedShifts[day] && ShiftCount > MAX_WORKDAYS
-                || !AssignedShifts[day] && ShiftCount+1>MAX_WORKDAYS) {
+            if (AssignedShifts[day] && ShiftCount > CFG.MAX_WORKDAYS
+                || !AssignedShifts[day] && ShiftCount + 1 > CFG.MAX_WORKDAYS) {
                 return 1;
             }
             return 0;
@@ -151,7 +138,7 @@ namespace Genetic_Algorithm
             void RandomizeDisliked() {
                 List<int> remainingDays = Enumerable.Range(0, pCFG.WEEKDAYS).ToList();
                 int dislikedCount = 0;
-                while (Program.Rand.NextDouble() < DISLIKED_CHANCE && dislikedCount < MAX_DISLIKED_DAYS) {
+                while (Program.Rand.NextDouble() < CFG.DISLIKED_CHANCE && dislikedCount < CFG.MAX_DISLIKED_DAYS) {
                     dislikedCount++;
                 }
                 DislikedWorkdays = new int[dislikedCount];
@@ -168,7 +155,7 @@ namespace Genetic_Algorithm
                 int offdayCount = 0;
                 List<int> remainingDays = Enumerable.Range(0, pCFG.WEEKDAYS).ToList();
                 for (int i = 0; i < pCFG.WEEKDAYS; i++) {
-                    if (Program.Rand.NextDouble() < OFFDAY_CHANCE) {
+                    if (Program.Rand.NextDouble() < CFG.OFFDAY_CHANCE) {
                         offdayCount++;
                     }
                 }
