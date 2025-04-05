@@ -16,7 +16,6 @@ namespace Genetic_Algorithm
 
 
         Worker[] WorkersTable { get; set; }
-        Random Rand { get; set; }
         int[] CurrentShifts { get; set; }
 
         public Schedule(Schedule[] parents) : this() {
@@ -31,17 +30,23 @@ namespace Genetic_Algorithm
                 || Program.currentGeneration > Program.GENERATION_COUNT*0.9) FeasibilityMutations();
         }
 
+        public Schedule() {
+            WorkersTable = new Worker[pCFG.WORKER_COUNT];
+            CurrentShifts = new int[pCFG.WEEKDAYS];
+        }
+
+
         void FeasibilityMutations() {
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                 if (NEEDED_SHIFTS[day] == CurrentShifts[day]) continue;
                
                 bool mutationWanted = NEEDED_SHIFTS[day] < CurrentShifts[day];
-                Worker[] mutationCandidates = WorkersTable.Where(worker => worker.AssignedWorkdays[day] == !mutationWanted).ToArray();
+                Worker[] mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == !mutationWanted).ToArray();
                 
                 if (mutationCandidates.Length == 0) continue;
 
                 while (NEEDED_SHIFTS[day] != CurrentShifts[day]) {
-                    int worker = Rand.Next(mutationCandidates.Length);
+                    int worker = Program.Rand.Next(mutationCandidates.Length);
                     if (mutationCandidates[worker].AttemptMutation(day)) {
                         NEEDED_SHIFTS[day] += mutationWanted == true? 1 : -1;
                     }
@@ -52,16 +57,10 @@ namespace Genetic_Algorithm
         void RandomMutations() {
             int mutationCount = (int)Math.Floor(Program.currentGeneration/Program.GENERATION_COUNT * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
             for (int i = 0; i < mutationCount; i++) {
-                int worker = Rand.Next(WorkersTable.Length);
-                int day = Rand.Next(7);
+                int worker = Program.Rand.Next(WorkersTable.Length);
+                int day = Program.Rand.Next(7);
                 WorkersTable[worker].AttemptMutation(day);
             }
-        }
-
-        public Schedule() {
-            Rand = new();
-            WorkersTable = new Worker[pCFG.WORKER_COUNT];
-            CurrentShifts = new int[pCFG.WEEKDAYS];
         }
 
 
@@ -70,7 +69,7 @@ namespace Genetic_Algorithm
                 bool[] newSchedule = new bool[pCFG.WEEKDAYS];
                 for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                     int winner = RouletteWinner(FindWorkerWeights(parents, workerIndex));
-                    newSchedule[day] = parents[winner].WorkersTable[workerIndex].AssignedWorkdays[day];
+                    newSchedule[day] = parents[winner].WorkersTable[workerIndex].AssignedShifts[day];
                 }
                 this.WorkersTable[workerIndex] = new(workerIndex, newSchedule);
             }
@@ -80,14 +79,14 @@ namespace Genetic_Algorithm
             for (int workerIndex = 0; workerIndex < WorkersTable.Length; workerIndex++) {
                 if (pointByPointTargets.Contains(workerIndex)) continue;
                 int winner = RouletteWinner(FindWorkerWeights(parents, workerIndex));
-                bool[] copiedWorkAssignments = (bool[])parents[winner].WorkersTable[workerIndex].AssignedWorkdays.Clone();
+                bool[] copiedWorkAssignments = (bool[])parents[winner].WorkersTable[workerIndex].AssignedShifts.Clone();
                 this.WorkersTable[workerIndex] = new(workerIndex, copiedWorkAssignments);
             }
         }
 
 
         int RouletteWinner(double[] weights) {
-            double randomWeight = Rand.NextDouble();
+            double randomWeight = Program.Rand.NextDouble();
             int index = Array.FindIndex(weights, weight => weight > randomWeight);
             return index == -1 ? 0 : index;
         }
@@ -97,7 +96,7 @@ namespace Genetic_Algorithm
             List<int> pointByPointWorkers = Enumerable.Range(0, WorkersTable.Length).ToList();
 
             for (int i = 0; i < pointByPointWorkers.Count * (1 - CFG.POINT_BY_POINT_RATIO); i++) {
-                pointByPointWorkers.RemoveAt(Rand.Next(pointByPointWorkers.Count));
+                pointByPointWorkers.RemoveAt(Program.Rand.Next(pointByPointWorkers.Count));
             }
             return pointByPointWorkers;
         }
@@ -121,22 +120,19 @@ namespace Genetic_Algorithm
 
         public void RandomizeWorkers() {
             for (int i = 0; i < WorkersTable.Length; i++) {
-                WorkersTable[i] = new Worker(i, GetRandomShifts());
+                WorkersTable[i] = new Worker(i);
             }
             CalculateScheduleFitness();
             FeasibilityMutations();
+            RecountShifts();
         }
         
-
-        bool[] GetRandomShifts() {
-            bool[] shifts = new bool[pCFG.WEEKDAYS];
-            for(int day=0; day< pCFG.WEEKDAYS; day++) {
-                if (Rand.NextDouble() < (double)(Worker.MAX_WORKDAYS) / pCFG.WEEKDAYS) {
-                    shifts[day] = true;
-                    CurrentShifts[day]++;
-                }
+        void RecountShifts() {
+            for(int day = 0; day<pCFG.WEEKDAYS; day++) {
+                CurrentShifts[day] = this.WorkersTable.
+                                     Where(worker => worker.AssignedShifts[day]).
+                                     Count();
             }
-            return shifts;
         }
 
         public override string ToString() {

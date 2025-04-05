@@ -6,10 +6,12 @@
         const double ELITISM_RATIO = 0.05;
 
         public static int currentGeneration;
+        public static Random Rand = new();
+
         static Schedule[] currentPopulation;
         static Schedule[] children;
-        static Random rand;
         static int elitismCarryoverCount;
+
 
         static void PrintPopulation() {
             double max = currentPopulation.Max(Sched => Sched.CalculateScheduleFitness());
@@ -26,7 +28,6 @@
         static void Main(string[] args) {
             
             DateTime time1 = DateTime.Now;
-            rand = new();
             currentPopulation = new Schedule[SCHEDULE_COUNT];
             elitismCarryoverCount = (int)Math.Ceiling(SCHEDULE_COUNT * ELITISM_RATIO);
             currentGeneration = 1;
@@ -50,7 +51,7 @@
                     List<int> candidates = Enumerable.Range(0, SCHEDULE_COUNT).ToList();
                     Schedule[] parents = new Schedule[PARENT_COUNT];
                     for (int j = 0; j < PARENT_COUNT; j++) {
-                        int candidate = candidates[rand.Next(candidates.Count)];
+                        int candidate = candidates[Rand.Next(candidates.Count)];
                         candidates.Remove(candidate);
                         parents[j] = currentPopulation[candidate];
                     }
