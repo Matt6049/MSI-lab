@@ -31,7 +31,7 @@ namespace Genetic_Algorithm {
             public static double MUTATION_CHANCE = 0.2;
 
             //preferences
-            public const int MAX_WORKDAYS = 5;
+            public static int MAX_WORKDAYS = 5;
             public static int MAX_DISLIKED_DAYS = 3;
             public static double DISLIKED_CHANCE = 0.65;
             public static double OFFDAY_CHANCE = 0.2;
