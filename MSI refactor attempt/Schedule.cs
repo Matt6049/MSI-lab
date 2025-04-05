@@ -1,4 +1,4 @@
-﻿namespace MSI_refactor_attempt
+﻿namespace Genetic_Algorithm
 {
     public class Schedule
     {

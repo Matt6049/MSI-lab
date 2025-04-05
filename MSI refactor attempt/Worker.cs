@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-namespace MSI_refactor_attempt
+namespace Genetic_Algorithm
 {
     public class Worker {
         public const double MAX_FITNESS = 8;

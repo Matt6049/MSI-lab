@@ -1,4 +1,4 @@
-﻿namespace MSI_refactor_attempt {
+﻿namespace Genetic_Algorithm {
     internal class Program {
         public const int GENERATION_COUNT = 250;
         const int SCHEDULE_COUNT = 50;
