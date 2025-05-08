@@ -55,8 +55,12 @@ namespace Genetic_Algorithm
             return shifts;
         }
 
-        public bool AttemptMutation(int day) {
-            if(Program.Rand.NextDouble() < (1 - WorkdayFavorabilities[day])* CFG.MUTATION_CHANCE) {
+        public bool AttemptMutation(int day, bool force = false) {
+            double roll = Program.Rand.NextDouble();
+            double threshold = (1 - WorkdayFavorabilities[day]) * CFG.MUTATION_CHANCE;
+            bool rollSuccess =  roll > threshold; //można dać prosto do ifa, ale latwiejszy debug jest tym sposobem
+
+            if (force || rollSuccess) {
                 AssignedShifts[day] = !AssignedShifts[day];
                 //okazja na poprawę: dodawanie lub odejmowanie z liczb zmian, nielubianych zmian itd zamiast przeliczania od nowa
                 RecountShifts();
