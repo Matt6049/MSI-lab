@@ -76,7 +76,7 @@ namespace Genetic_Algorithm
             message += indentString + "Dni przypisane: [" + String.Join(' ', AssignedShifts)+"]\n";
             message += indentString + "Dni nielubiane: [" + String.Join(' ', PersonalPreference.DislikedWorkdays) + "]\n";
             message += indentString + "Dni wolne     : [" + String.Join(' ', PersonalPreference.OffDays) + "]\n";
-            message += indentString + "Chęć do dni   : [" + String.Join(' ', WorkdayFavorabilities) + "]\n";
+            message += indentString + "Chęć wymiany  : [" + String.Join(' ', WorkdayFavorabilities) + "]\n";
             message += indentString + "Fitness       : " + this.fitness;
             return message;
         } 
@@ -90,7 +90,6 @@ namespace Genetic_Algorithm
         }
 
         double FindFavorability(bool proposedShiftState, int day) {
-
             double weight = 1;
             weight -= OffDayPenalty(day)* CFG.OFFDAY_WEIGHT;
             weight -= OverworkPenalty(day)* CFG.OVERWORK_WEIGHT;
@@ -137,18 +136,15 @@ namespace Genetic_Algorithm
                 }
             }
         }
+    
 
-
-        private class Preferences {
-
-
+    private class Preferences {
             public int[] DislikedWorkdays { get; private set; }
             public int[] OffDays { get; private set; }
 
             public Preferences() {
                 RandomizeDisliked();
                 RandomizeOffdays();
-
             }
 
             void RandomizeDisliked() {
