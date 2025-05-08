@@ -65,20 +65,22 @@ namespace Genetic_Algorithm {
                     children[i] = new(parents);
                 }
                 currentPopulation = children;
-
-                if ((currentGeneration + 1) % (pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FREQUENCY) == 0
-                || currentGeneration > pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FINAL) {
-                    foreach(Schedule sched in currentPopulation) {
-                        sched.ForceFeasibility();
-                    }
-                }
-
+                FeasibilityCheck();
                 currentGeneration++;
             }
             DateTime timeEnd = DateTime.Now;
             PrintBestSchedule();
             Console.WriteLine($"Czas: {timeEnd - timeStart}");
             
+        }
+
+        private static void FeasibilityCheck() {
+            if ((currentGeneration + 1) % (pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FREQUENCY) == 0
+            || currentGeneration > pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FINAL) {
+                foreach (Schedule sched in currentPopulation) {
+                    sched.ForceFeasibility();
+                }
+            }
         }
     }
 }
