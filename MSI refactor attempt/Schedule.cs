@@ -19,9 +19,9 @@ namespace Genetic_Algorithm
 
         public Schedule(Schedule[] parents) : this() {
             List<int> pointByPointTargets = RandomizeCrossoverTargets();
-
             CloneCrossover(parents, pointByPointTargets);
             PointByPointCrossover(parents, pointByPointTargets);
+            RecountShifts();
             //TODO: modyfikacja metod mutacyjnych, aby usunąć szansę nieskończoności prób
             //być może zmiana obliczeń fitnessu wedle feasibility
             RandomMutations();
@@ -33,7 +33,6 @@ namespace Genetic_Algorithm
         }
 
         public void PrintShifts() {
-            RecountShifts();
             Console.WriteLine("Oczekiwane ilości zmian: [" + String.Join(' ', Schedule.NEEDED_SHIFTS) + "]");
             Console.WriteLine("Rzeczywiste zmiany     : [" + String.Join(' ', CurrentShifts) + "]");
         }
@@ -45,22 +44,32 @@ namespace Genetic_Algorithm
         }
 
         public void ForceFeasibility() {
-            RecountShifts();
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                 if (CurrentShifts[day] >= NEEDED_SHIFTS[day]) continue;
                 List<Worker> mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == false).ToList();
-               
+
                 while (NEEDED_SHIFTS[day] > CurrentShifts[day]) {
                     if (mutationCandidates.Count == 0) throw new Exception("Not enough workers to cover day " + day);
                     Worker candidate = mutationCandidates[Program.Rand.Next(mutationCandidates.Count)];
                     bool success = candidate.AttemptMutation(day);
-                
+
                     if (success) {
                         CurrentShifts[day]++;
                         mutationCandidates.Remove(candidate);
                     }
                 }
             }
+        }
+
+        public bool CheckFeasibility() {
+            bool feasible = true;
+            for(int day=0; day<pCFG.WEEKDAYS; day++) {
+                if (NEEDED_SHIFTS[day] > CurrentShifts[day]) {
+                    feasible = false;
+                    break;
+                }
+            }
+            return feasible;
         }
 
         void RandomMutations() {
@@ -132,8 +141,8 @@ namespace Genetic_Algorithm
                 WorkersTable[i] = new Worker(i);
             }
             CalculateScheduleFitness();
-            ForceFeasibility();
             RecountShifts();
+            ForceFeasibility();
         }
         
         void RecountShifts() {

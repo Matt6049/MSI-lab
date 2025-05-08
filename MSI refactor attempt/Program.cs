@@ -37,7 +37,7 @@ namespace Genetic_Algorithm {
             DateTime timeEnd = DateTime.Now;
             PrintBestSchedule();
             Console.WriteLine($"Czas: {timeEnd - timeStart}");
-
+            
         }
 
         private static Schedule[] CreateNextPopulation() {
@@ -46,26 +46,26 @@ namespace Genetic_Algorithm {
 
             for (int i = 0; i < elites.Length; i++) {
                 children[i] = elites[i];
-                }
-
-
-            for (int i = elites.Length; i < CFG.SCHEDULE_COUNT; i++) {
-                    List<int> candidates = Enumerable.Range(0, CFG.SCHEDULE_COUNT).ToList();
-                    Schedule[] parents = new Schedule[CFG.PARENT_COUNT];
-
-                    for (int j = 0; j < CFG.PARENT_COUNT; j++) {
-                        int candidate = candidates[Rand.Next(candidates.Count)];
-                        candidates.Remove(candidate);
-                        parents[j] = currentPopulation[candidate];
-                    }
-                    children[i] = new(parents);
-                }
-            return children;
             }
 
 
+            for (int i = elites.Length; i < CFG.SCHEDULE_COUNT; i++) {
+                List<int> candidates = Enumerable.Range(0, CFG.SCHEDULE_COUNT).ToList();
+                Schedule[] parents = new Schedule[CFG.PARENT_COUNT];
 
-            
+                for (int j = 0; j < CFG.PARENT_COUNT; j++) {
+                    int candidate = candidates[Rand.Next(candidates.Count)];
+                    candidates.Remove(candidate);
+                    parents[j] = currentPopulation[candidate];
+                }
+                children[i] = new(parents);
+            }
+            return children;
+        }
+
+
+
+
 
         static int FeasibilityCountdown = 0;
         private static void FeasibilityCheck() {
