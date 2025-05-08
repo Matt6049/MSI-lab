@@ -11,23 +11,6 @@ namespace Genetic_Algorithm {
         static int elitismCarryoverCount;
 
 
-        static void PrintPopulation() {
-            double max = currentPopulation.Max(Sched => Sched.CalculateScheduleFitness());
-            double avg = currentPopulation.Average(Sched => Sched.CalculateScheduleFitness());
-
-            Console.WriteLine($"Generacja: {currentGeneration}, Fitness maksymalny: {max}, Fitness średni: {avg}");
-            //Console.WriteLine($"Current generation: {currentGeneration}");
-            //foreach(Schedule sched in currentPopulation) {
-            //    Console.WriteLine(sched);
-            //}
-            //Console.WriteLine();
-        }
-
-        static void PrintBestSchedule() {
-            Schedule best = currentPopulation.OrderByDescending(Sched => Sched.CalculateScheduleFitness()).First();
-            best.PrintWorkerSchedules();
-            best.PrintShifts();
-        }
 
         static void Main(string[] args) {
             DateTime timeStart = DateTime.Now;
@@ -66,7 +49,7 @@ namespace Genetic_Algorithm {
                 }
                 currentPopulation = children;
                 FeasibilityCheck();
-                FixFeasibility();
+                TryFixFeasibility();
                 currentGeneration++;
             }
             DateTime timeEnd = DateTime.Now;
@@ -83,12 +66,28 @@ namespace Genetic_Algorithm {
             }
         }
 
-        private static void FixFeasibility() {
+
+        private static void TryFixFeasibility() {
             if (FeasibilityCountdown <= 0) return;
             FeasibilityCountdown--;
             foreach (Schedule sched in currentPopulation) {
                 sched.ForceFeasibility();
             }
+        }
+
+
+        static void PrintPopulation() {
+            double max = currentPopulation.Max(Sched => Sched.CalculateScheduleFitness());
+            double avg = currentPopulation.Average(Sched => Sched.CalculateScheduleFitness());
+
+            Console.WriteLine($"Generacja: {currentGeneration}, Fitness maksymalny: {max}, Fitness średni: {avg}");
+        }
+
+
+        static void PrintBestSchedule() {
+            Schedule best = currentPopulation.OrderByDescending(Sched => Sched.CalculateScheduleFitness()).First();
+            best.PrintWorkerSchedules();
+            best.PrintShifts();
         }
     }
 }
