@@ -66,6 +66,7 @@ namespace Genetic_Algorithm {
                 }
                 currentPopulation = children;
                 FeasibilityCheck();
+                FixFeasibility();
                 currentGeneration++;
             }
             DateTime timeEnd = DateTime.Now;
@@ -74,12 +75,19 @@ namespace Genetic_Algorithm {
             
         }
 
+        static int FeasibilityCountdown = 0;
         private static void FeasibilityCheck() {
-            if ((currentGeneration + 1) % (pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FREQUENCY) == 0
-            || currentGeneration > pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FINAL) {
-                foreach (Schedule sched in currentPopulation) {
-                    sched.ForceFeasibility();
-                }
+            if ((currentGeneration+1)%CFG.FORCE_FEASIBILITY_FREQUENCY == 0
+            || currentGeneration > pCFG.GENERATION_COUNT - CFG.FORCE_FEASIBILITY_FINAL) {
+                FeasibilityCountdown = CFG.FORCE_FEASIBILITY_LENGTH;
+            }
+        }
+
+        private static void FixFeasibility() {
+            if (FeasibilityCountdown <= 0) return;
+            FeasibilityCountdown--;
+            foreach (Schedule sched in currentPopulation) {
+                sched.ForceFeasibility();
             }
         }
     }

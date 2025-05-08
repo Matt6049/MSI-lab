@@ -8,15 +8,18 @@ namespace Genetic_Algorithm {
         
         public const int WEEKDAYS = 7;
         public static int WORKER_COUNT = 50;
-        public static int GENERATION_COUNT = 250;
+        public static int GENERATION_COUNT = 1000;
 
         public static class ProgramConfig {
             public static bool PRINT_GENERATION_STATISTICS = true;
             public static int SCHEDULE_COUNT = 50;
             public static int PARENT_COUNT = 3;
             public static double ELITISM_RATIO = 0.05;
-            public static double FORCE_FEASIBILITY_FREQUENCY = 0.1; //every 10% generations
-            public static double FORCE_FEASIBILITY_FINAL = 0.2; //force feasibility in the last 20% too
+
+            //every n generations, force feasibility for m generations
+            public static double FORCE_FEASIBILITY_FREQUENCY = 100;
+            public static int FORCE_FEASIBILITY_LENGTH = 5;
+            public static double FORCE_FEASIBILITY_FINAL = 50; //force feasibility in the last n generations too
         }
 
         public static class ScheduleConfig {
