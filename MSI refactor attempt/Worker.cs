@@ -138,6 +138,7 @@ namespace Genetic_Algorithm
             }
         }
 
+
         private class Preferences {
 
 

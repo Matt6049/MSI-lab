@@ -25,8 +25,6 @@ namespace Genetic_Algorithm
             //TODO: modyfikacja metod mutacyjnych, aby usunąć szansę nieskończoności prób
             //być może zmiana obliczeń fitnessu wedle feasibility
             RandomMutations();
-            if(Program.currentGeneration % pCFG.GENERATION_COUNT/10 == 0
-                || Program.currentGeneration > pCFG.GENERATION_COUNT*0.9) FeasibilityMutations();
         }
 
         public Schedule() {
@@ -134,7 +132,7 @@ namespace Genetic_Algorithm
                 WorkersTable[i] = new Worker(i);
             }
             CalculateScheduleFitness();
-            FeasibilityMutations();
+            ForceFeasibility();
             RecountShifts();
         }
         

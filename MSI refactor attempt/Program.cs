@@ -53,6 +53,7 @@ namespace Genetic_Algorithm {
                     children[i] = bestParents[i];
                 }
 
+                //ustal elityzm tylko dla wlaściwych rozwiązań
                 for (int i = elitismCarryoverCount; i < CFG.SCHEDULE_COUNT; i++) {
                     List<int> candidates = Enumerable.Range(0, CFG.SCHEDULE_COUNT).ToList();
                     Schedule[] parents = new Schedule[CFG.PARENT_COUNT];
@@ -64,6 +65,14 @@ namespace Genetic_Algorithm {
                     children[i] = new(parents);
                 }
                 currentPopulation = children;
+
+                if ((currentGeneration + 1) % (pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FREQUENCY) == 0
+                || currentGeneration > pCFG.GENERATION_COUNT * CFG.FORCE_FEASIBILITY_FINAL) {
+                    foreach(Schedule sched in currentPopulation) {
+                        sched.ForceFeasibility();
+                    }
+                }
+
                 currentGeneration++;
             }
             DateTime timeEnd = DateTime.Now;
