@@ -73,7 +73,7 @@ namespace Genetic_Algorithm
         }
 
         void RandomMutations() {
-            int mutationCount = (int)Math.Floor(Program.currentGeneration/ pCFG.GENERATION_COUNT * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
+            int mutationCount = (int)Math.Floor(Program.currentGeneration/ pCFG.GENERATION_CAP * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
             for (int i = 0; i < mutationCount; i++) {
                 int worker = Program.Rand.Next(WorkersTable.Length); //można tu zmienić aby nie wybierać tych samych kandydatów mutacji, ale zmniejszy to obszar przeszukiwany
                 int day = Program.Rand.Next(7);

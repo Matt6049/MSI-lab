@@ -8,7 +8,7 @@ namespace Genetic_Algorithm {
         
         public const int WEEKDAYS = 7;
         public static int WORKER_COUNT = 50;
-        public static int GENERATION_COUNT = 1000;
+        public static int GENERATION_CAP = 1000;
 
         public static class ProgramConfig {
             public static bool PRINT_GENERATION_STATISTICS = true;
@@ -18,8 +18,9 @@ namespace Genetic_Algorithm {
 
             //every n generations, force feasibility for m generations
             public static double FORCE_FEASIBILITY_FREQUENCY = 100;
-            public static int FORCE_FEASIBILITY_LENGTH = 5;
-            public static double FORCE_FEASIBILITY_FINAL = 50; //force feasibility in the last n generations too
+            public static int FORCE_FEASIBILITY_LENGTH = 25;
+            //if no change for n generations, force feasibility and end after converging again
+            public static int CONVERGENCE_COUNTDOWN_DURATION = 50;
         }
 
         public static class ScheduleConfig {
