@@ -11,7 +11,6 @@ namespace Genetic_Algorithm
             for (int day=0; day< pCFG.WEEKDAYS; day++) {
                 NEEDED_SHIFTS[day] = (int)Math.Ceiling(pCFG.WORKER_COUNT * CFG.SHIFT_PROPORTIONS[day]);
             }
-
         }
 
 
@@ -35,8 +34,17 @@ namespace Genetic_Algorithm
             CurrentShifts = new int[pCFG.WEEKDAYS];
         }
 
+        public void PrintShifts() {
+            RecountShifts();
+            Console.WriteLine("Oczekiwane ilości zmian: [" + String.Join(' ', Schedule.NEEDED_SHIFTS) + "]");
+            Console.WriteLine("Rzeczywiste zmiany     : [" + String.Join(' ', CurrentShifts) + "]");
+        }
 
-        void FeasibilityMutations() {
+        public void PrintWorkerSchedules() {
+            foreach (Worker worker in WorkersTable) {
+                Console.WriteLine(worker.ToString(1));
+            }
+        }
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                 if (NEEDED_SHIFTS[day] == CurrentShifts[day]) continue;
                

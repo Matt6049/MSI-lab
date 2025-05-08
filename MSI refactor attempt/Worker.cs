@@ -5,8 +5,7 @@ using CFG = Genetic_Algorithm.Config.WorkerConfig;
 namespace Genetic_Algorithm
 {
     public class Worker {
-        static List<Preferences> PREFERENCES_LIST {get;}
-
+        static List<Preferences> PREFERENCES_LIST { get; }
 
         static Worker() {
             if (File.Exists("testy")) {
@@ -45,6 +44,7 @@ namespace Genetic_Algorithm
             RecalculateFavorability();
         }
 
+        
         static bool[] GetRandomShifts() {
             bool[] shifts = new bool[pCFG.WEEKDAYS];
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
@@ -65,6 +65,17 @@ namespace Genetic_Algorithm
             }
             return false;
         }
+
+        public string ToString(int indent) {
+            string message = new string(' ', 2*indent)+"Pracownik " + PreferenceIndex + ":\n";
+            string indentString = new string(' ', 2 * indent + 2);
+            message += indentString + "Dni przypisane: [" + String.Join(' ', AssignedShifts)+"]\n";
+            message += indentString + "Dni nielubiane: [" + String.Join(' ', PersonalPreference.DislikedWorkdays) + "]\n";
+            message += indentString + "Dni wolne     : [" + String.Join(' ', PersonalPreference.OffDays) + "]\n";
+            message += indentString + "Chęć do dni   : [" + String.Join(' ', WorkdayFavorabilities) + "]\n";
+            message += indentString + "Fitness       : " + this.fitness;
+            return message;
+        } 
 
         void RecalculateFavorability() {
             this.fitness = 1;

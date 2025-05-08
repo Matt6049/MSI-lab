@@ -23,6 +23,12 @@ namespace Genetic_Algorithm {
             //Console.WriteLine();
         }
 
+        static void PrintBestSchedule() {
+            Schedule best = currentPopulation.OrderByDescending(Sched => Sched.CalculateScheduleFitness()).First();
+            best.PrintWorkerSchedules();
+            best.PrintShifts();
+        }
+
         static void Main(string[] args) {
             DateTime timeStart = DateTime.Now;
             currentPopulation = new Schedule[CFG.SCHEDULE_COUNT];
@@ -62,6 +68,7 @@ namespace Genetic_Algorithm {
                 currentGeneration++;
             }
             DateTime timeEnd = DateTime.Now;
+            PrintBestSchedule();
             Console.WriteLine($"Czas: {timeEnd - timeStart}");
             
         }
