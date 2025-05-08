@@ -46,7 +46,6 @@ namespace Genetic_Algorithm {
                 if (CFG.PRINT_GENERATION_STATISTICS || currentGeneration == pCFG.GENERATION_COUNT) {
                     PrintPopulation();
                 }
-
                 children = new Schedule[CFG.SCHEDULE_COUNT];
 
                 Schedule[] bestParents = currentPopulation.OrderBy(sched => sched.CalculateScheduleFitness()).TakeLast(elitismCarryoverCount).ToArray();

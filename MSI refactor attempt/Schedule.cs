@@ -45,18 +45,21 @@ namespace Genetic_Algorithm
                 Console.WriteLine(worker.ToString(1));
             }
         }
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                if (NEEDED_SHIFTS[day] == CurrentShifts[day]) continue;
-               
-                bool mutationWanted = NEEDED_SHIFTS[day] < CurrentShifts[day];
-                Worker[] mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == !mutationWanted).ToArray();
-                
-                if (mutationCandidates.Length == 0) continue;
 
-                while (NEEDED_SHIFTS[day] != CurrentShifts[day]) {
-                    int worker = Program.Rand.Next(mutationCandidates.Length);
-                    if (mutationCandidates[worker].AttemptMutation(day)) {
-                        NEEDED_SHIFTS[day] += mutationWanted == true? 1 : -1;
+        public void ForceFeasibility() {
+            RecountShifts();
+            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
+                if (CurrentShifts[day] >= NEEDED_SHIFTS[day]) continue;
+                List<Worker> mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == false).ToList();
+               
+                while (NEEDED_SHIFTS[day] > CurrentShifts[day]) {
+                    if (mutationCandidates.Count == 0) throw new Exception("Not enough workers to cover day " + day);
+                    Worker candidate = mutationCandidates[Program.Rand.Next(mutationCandidates.Count)];
+                    bool success = candidate.AttemptMutation(day);
+                
+                    if (success) {
+                        CurrentShifts[day]++;
+                        mutationCandidates.Remove(candidate);
                     }
                 }
             }
