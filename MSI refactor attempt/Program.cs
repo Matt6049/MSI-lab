@@ -1,8 +1,9 @@
-﻿using pCFG = Genetic_Algorithm.Config;
-using CFG = Genetic_Algorithm.Config.ProgramConfig;
-
-namespace Genetic_Algorithm {
+﻿namespace Genetic_Algorithm {
     internal class Program {
+        static Config CFG = Config.ConfigSingleton;
+        static Config.ProgramConfig pCFG = CFG.pCFG;
+
+
         public static int currentGeneration;
         public static Random Rand = new();
         enum CONVERGENCE_PROGRESS {
@@ -17,19 +18,19 @@ namespace Genetic_Algorithm {
 
         static void Main(string[] args) {
             DateTime timeStart = DateTime.Now;
-            currentPopulation = new Schedule[CFG.SCHEDULE_COUNT];
-            elitismCarryoverCount = (int)Math.Ceiling(CFG.SCHEDULE_COUNT * CFG.ELITISM_RATIO);
+            currentPopulation = new Schedule[pCFG.SCHEDULE_COUNT];
+            elitismCarryoverCount = (int)Math.Ceiling(pCFG.SCHEDULE_COUNT * pCFG.ELITISM_RATIO);
             currentGeneration = 1;
 
 
-            for (int i = 0; i < CFG.SCHEDULE_COUNT; i++) {
+            for (int i = 0; i < pCFG.SCHEDULE_COUNT; i++) {
                 currentPopulation[i] = new();
                 currentPopulation[i].RandomizeWorkers();
             }
 
             CONVERGENCE_PROGRESS convergenceState = CONVERGENCE_PROGRESS.NOT_CONVERGING;
-            while (currentGeneration <= pCFG.GENERATION_CAP && convergenceState != CONVERGENCE_PROGRESS.CONVERGED) {
-                if (CFG.PRINT_GENERATION_STATISTICS) {
+            while (currentGeneration <= CFG.GENERATION_CAP && convergenceState != CONVERGENCE_PROGRESS.CONVERGED) {
+                if (pCFG.PRINT_GENERATION_STATISTICS) {
                     PrintPopulation();
                 }
                 elites = FindEliteSchedules();
@@ -48,7 +49,7 @@ namespace Genetic_Algorithm {
         }
 
         private static Schedule[] CreateNextPopulation() {
-            Schedule[] children = new Schedule[CFG.SCHEDULE_COUNT];
+            Schedule[] children = new Schedule[pCFG.SCHEDULE_COUNT];
             int childrenToCreate = currentPopulation.Length - elites.Length;
 
             for (int i = 0; i < elites.Length; i++) {
@@ -56,11 +57,11 @@ namespace Genetic_Algorithm {
             }
 
 
-            for (int i = elites.Length; i < CFG.SCHEDULE_COUNT; i++) {
-                List<int> candidates = Enumerable.Range(0, CFG.SCHEDULE_COUNT).ToList();
-                Schedule[] parents = new Schedule[CFG.PARENT_COUNT];
+            for (int i = elites.Length; i < pCFG.SCHEDULE_COUNT; i++) {
+                List<int> candidates = Enumerable.Range(0, pCFG.SCHEDULE_COUNT).ToList();
+                Schedule[] parents = new Schedule[pCFG.PARENT_COUNT];
 
-                for (int j = 0; j < CFG.PARENT_COUNT; j++) {
+                for (int j = 0; j < pCFG.PARENT_COUNT; j++) {
                     int candidate = candidates[Rand.Next(candidates.Count)];
                     candidates.Remove(candidate);
                     parents[j] = currentPopulation[candidate];
@@ -70,20 +71,20 @@ namespace Genetic_Algorithm {
             return children;
         }
 
-        static int ConvergenceCountdown = CFG.CONVERGENCE_COUNTDOWN_DURATION;
+        static int ConvergenceCountdown = pCFG.CONVERGENCE_COUNTDOWN_DURATION;
         static double PreviousMax = 0;
         private static bool ConvergenceCheck() {
             if (elites.Length <= 0) return false;
 
             double maxFitness = elites[0].ScheduleFitness;
             if(maxFitness != PreviousMax) {
-                ConvergenceCountdown = CFG.CONVERGENCE_COUNTDOWN_DURATION;
+                ConvergenceCountdown = pCFG.CONVERGENCE_COUNTDOWN_DURATION;
                 PreviousMax = maxFitness;
                 return false;
             }
             ConvergenceCountdown--;
             if (ConvergenceCountdown <= 0) {
-                ConvergenceCountdown = CFG.CONVERGENCE_COUNTDOWN_DURATION;
+                ConvergenceCountdown = pCFG.CONVERGENCE_COUNTDOWN_DURATION;
                 return true;
             }
             return false;
@@ -101,8 +102,8 @@ namespace Genetic_Algorithm {
 
         static int FeasibilityCountdown = 0;
         private static void FeasibilityCheck() {
-            if ((currentGeneration+1)%CFG.FORCE_FEASIBILITY_FREQUENCY == 0) {
-                FeasibilityCountdown = CFG.FORCE_FEASIBILITY_LENGTH;
+            if ((currentGeneration+1)%pCFG.FORCE_FEASIBILITY_FREQUENCY == 0) {
+                FeasibilityCountdown = pCFG.FORCE_FEASIBILITY_LENGTH;
             }
         }
 

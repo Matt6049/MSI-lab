@@ -1,15 +1,15 @@
-﻿using CFG = Genetic_Algorithm.Config.ScheduleConfig;
-using pCFG = Genetic_Algorithm.Config;
-namespace Genetic_Algorithm
+﻿namespace Genetic_Algorithm
 {
     public class Schedule
     {
         static readonly int[] NEEDED_SHIFTS;
+        static readonly Config CFG = Config.ConfigSingleton;
+        static readonly Config.ScheduleConfig sCFG = CFG.sCFG;
 
         static Schedule() {
-            NEEDED_SHIFTS = new int[pCFG.WEEKDAYS];
-            for (int day=0; day< pCFG.WEEKDAYS; day++) {
-                NEEDED_SHIFTS[day] = (int)Math.Ceiling(pCFG.WORKER_COUNT * CFG.SHIFT_PROPORTIONS[day]);
+            NEEDED_SHIFTS = new int[Config.WEEKDAYS];
+            for (int day=0; day< Config.WEEKDAYS; day++) {
+                NEEDED_SHIFTS[day] = (int)Math.Ceiling(CFG.WORKER_COUNT * sCFG.SHIFT_PROPORTIONS[day]);
             }
         }
 
@@ -29,8 +29,8 @@ namespace Genetic_Algorithm
         }
 
         public Schedule() {
-            WorkersTable = new Worker[pCFG.WORKER_COUNT];
-            CurrentShifts = new int[pCFG.WEEKDAYS];
+            WorkersTable = new Worker[CFG.WORKER_COUNT];
+            CurrentShifts = new int[Config.WEEKDAYS];
         }
 
         public void PrintShifts() {
@@ -45,7 +45,7 @@ namespace Genetic_Algorithm
         }
 
         public void ForceFeasibility() {
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
                 if (CurrentShifts[day] >= NEEDED_SHIFTS[day]) continue;
                 List<Worker> mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == false).ToList();
 
@@ -64,7 +64,7 @@ namespace Genetic_Algorithm
 
         public bool CheckFeasibility() {
             bool feasible = true;
-            for(int day=0; day<pCFG.WEEKDAYS; day++) {
+            for(int day=0; day<Config.WEEKDAYS; day++) {
                 if (NEEDED_SHIFTS[day] > CurrentShifts[day]) {
                     feasible = false;
                     break;
@@ -74,7 +74,7 @@ namespace Genetic_Algorithm
         }
 
         void RandomMutations() {
-            int mutationCount = (int)Math.Floor(Program.currentGeneration/ pCFG.GENERATION_CAP * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
+            int mutationCount = (int)Math.Floor(Program.currentGeneration/ CFG.GENERATION_CAP * sCFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * Config.WEEKDAYS);
             for (int i = 0; i < mutationCount; i++) {
                 int worker = Program.Rand.Next(WorkersTable.Length); //można tu zmienić aby nie wybierać tych samych kandydatów mutacji, ale zmniejszy to obszar przeszukiwany
                 int day = Program.Rand.Next(7);
@@ -85,10 +85,10 @@ namespace Genetic_Algorithm
 
         void PointByPointCrossover(Schedule[] parents, List<int> pointByPointTargets) {
             foreach (int workerIndex in pointByPointTargets) {
-                bool[] newSchedule = new bool[pCFG.WEEKDAYS];
+                bool[] newSchedule = new bool[Config.WEEKDAYS];
 
 
-                for (int day = 0; day < pCFG.WEEKDAYS; day++) {
+                for (int day = 0; day < Config.WEEKDAYS; day++) {
                     int winner = RouletteWinner(FindWorkerWeights(parents, workerIndex));
                     newSchedule[day] = parents[winner].WorkersTable[workerIndex].AssignedShifts[day];
                 }
@@ -116,7 +116,7 @@ namespace Genetic_Algorithm
         List<int> RandomizeCrossoverTargets() {
             List<int> pointByPointWorkers = Enumerable.Range(0, WorkersTable.Length).ToList();
 
-            for (int i = 0; i < pointByPointWorkers.Count * (1 - CFG.POINT_BY_POINT_RATIO); i++) {
+            for (int i = 0; i < pointByPointWorkers.Count * (1 - sCFG.POINT_BY_POINT_RATIO); i++) {
                 pointByPointWorkers.RemoveAt(Program.Rand.Next(pointByPointWorkers.Count));
             }
             return pointByPointWorkers;
@@ -154,7 +154,7 @@ namespace Genetic_Algorithm
         }
         
         void RecountShifts() {
-            for(int day = 0; day<pCFG.WEEKDAYS; day++) {
+            for(int day = 0; day<Config.WEEKDAYS; day++) {
                 CurrentShifts[day] = this.WorkersTable.
                                      Where(worker => worker.AssignedShifts[day]).
                                      Count();
