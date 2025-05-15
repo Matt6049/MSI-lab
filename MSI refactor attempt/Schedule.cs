@@ -21,10 +21,10 @@ namespace Genetic_Algorithm
             List<int> pointByPointTargets = RandomizeCrossoverTargets();
             CloneCrossover(parents, pointByPointTargets);
             PointByPointCrossover(parents, pointByPointTargets);
-            RecountShifts();
             //TODO: modyfikacja metod mutacyjnych, aby usunąć szansę nieskończoności prób
             //być może zmiana obliczeń fitnessu wedle feasibility
             RandomMutations();
+            RecountShifts();
         }
 
         public Schedule() {
