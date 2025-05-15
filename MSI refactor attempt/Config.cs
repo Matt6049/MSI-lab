@@ -7,8 +7,8 @@ namespace Genetic_Algorithm {
     public static class Config {
         
         public const int WEEKDAYS = 7;
-        public static int WORKER_COUNT = 50;
-        public static int GENERATION_CAP = 1000;
+        public static int WORKER_COUNT = 10;
+        public static int GENERATION_CAP = 10000;
 
         public static class ProgramConfig {
             public static bool PRINT_GENERATION_STATISTICS = true;
@@ -31,9 +31,13 @@ namespace Genetic_Algorithm {
 
         public static class WorkerConfig {
             public static double MAX_FITNESS = 8;
+
+            public static double BASE_WEIGHT = 0.5; //between 0 and 1
+            //the three weights below must come out to a sum of 1
             public static double OFFDAY_WEIGHT = 0.5;
             public static double OVERWORK_WEIGHT = 0.3;
             public static double DISLIKED_DAY_WEIGHT = 0.2;
+
             public static double MUTATION_CHANCE = 0.2;
 
             //preferences

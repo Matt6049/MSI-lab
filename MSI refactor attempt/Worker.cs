@@ -94,37 +94,75 @@ namespace Genetic_Algorithm
 
         //todo: zmiana musi wliczać wszystkie dni na których by to mialo efekt, z jakiegoś powodu mamy
         //1 dla nielubianego dnia wolnego 6 z false na true
-        double FindFavorability(bool proposedShiftState, int day) {
-            double weight = 1;
-            weight -= OffDayPenalty(day) * CFG.OFFDAY_WEIGHT;
-            weight -= OverworkPenalty(day) * CFG.OVERWORK_WEIGHT;
-            weight -= DislikedPenalty(day) * CFG.DISLIKED_DAY_WEIGHT;
+        double FindMutationWeight(bool proposedShiftState, int day) {
+            double weight = CFG.BASE_WEIGHT;
+            double delta = (1-CFG.BASE_WEIGHT); //how much penalties matter
+            int direction = proposedShiftState ? 1 : -1; //if there are penalties, we want them to increase the chance of unassigning
+            weight -= getOverworkWeight();
+            weight -= getDislikedWeight();
+            weight -= getOffDayWeight();
 
-            return proposedShiftState ? weight : 1 - weight;
+            return weight;
+
+            double getOverworkWeight() {
+                return ShiftCountPenalty(CFG.MAX_WORKDAYS) //always apply, we use it to encourage assignment under 5 days
+                * delta
+                * direction
+                * (isRiskingOverwork()? 1: -1)
+                * CFG.OVERWORK_WEIGHT;
+            }
+
+            double getDislikedWeight() {
+                bool dayIsDisliked = isDisliked(day);
+                int retroactiveIncrease = (dayIsDisliked && !proposedShiftState) ? 1 : 0; //unless removing a disliked day, keep in mind the risk of an increased penalty
+                return DislikedPenalty(DislikedShiftCount + retroactiveIncrease)
+                    * delta
+                    * direction
+                    * (dayIsDisliked ? 1 : -1)
+                    * CFG.DISLIKED_DAY_WEIGHT;
+            }
+
+            //almost identical to disliked days
+            double getOffDayWeight() {
+                bool dayIsOff = isOffDay(day);
+                int retroactiveIncrease = (dayIsOff && !proposedShiftState) ? 1 : 0;
+                return OffDayPenalty(OffDayShiftCount+retroactiveIncrease) //increasing if proposed shift state = true and is offday
+                    * delta
+                    * direction
+                    * (dayIsOff? 1 : -1) 
+                    * CFG.OFFDAY_WEIGHT;
+            }
         }
 
 
 
 
-        double OffDayPenalty(bool increasing = false) {
-            double penalty = (OffDayShiftCount + (increasing ? 1 : 0)) / PersonalPreference.OffDays.Length;
+        double OffDayPenalty(int count) {
+            int max = PersonalPreference.OffDays.Length;
+            if (max == 0) return 0;
+            count = Math.Min(count, max);
+            double penalty = count / max;
             return penalty;
         }
         bool isOffDay(int day) {
             return PersonalPreference.OffDays.Contains(day);
         }
 
-        double OverworkPenalty(bool increasing = false) {
-            if (ShiftCount + (increasing ? 1 : 0) > CFG.MAX_WORKDAYS) return 1;
+        double ShiftCountPenalty(int count) { //in case i ever change formulas
+            if (count > CFG.MAX_WORKDAYS) return 1;
             return 0;
+        }
+        bool isRiskingOverwork() {
+            return ShiftCount >= CFG.MAX_WORKDAYS;
         }
 
 
-        double DislikedPenalty(bool increasing = false) {
-            double penalty = Math.Pow(8, (
-                (double)(DislikedShiftCount + (increasing ? 1 : 0))
-                / PersonalPreference.DislikedWorkdays.Length)
-                );
+        double DislikedPenalty(int count) {
+            int max = PersonalPreference.DislikedWorkdays.Length;
+            if (max == 0) return 0;
+
+            count = Math.Min(count, max);
+            double penalty = Math.Pow(8, ((double)count / max))/8;
             return penalty; 
         }
         bool isDisliked(int day) {
