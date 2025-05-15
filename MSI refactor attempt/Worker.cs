@@ -205,6 +205,8 @@ namespace Genetic_Algorithm
                     remainingDays.RemoveAll(day => day == DislikedWorkdays[i]);
                 }
 
+                DislikedWorkdays = DislikedWorkdays.Order().ToArray();
+
             }
 
             void RandomizeOffdays() {
@@ -222,6 +224,8 @@ namespace Genetic_Algorithm
                     OffDays[i] = remainingDays[Program.Rand.Next(remainingDays.Count)];
                     remainingDays.RemoveAll(day => day == OffDays[i]);
                 }
+
+                OffDays = OffDays.Order().ToArray();
             }
         }
     }
