@@ -22,12 +22,11 @@ namespace Genetic_Algorithm
                 File.WriteAllText("testy", s);
             }
         }
-
         
+        //todo: make assigned shifts, fitness, workday favorabilities and shift recounts lazy
         public int PreferenceIndex { get; init; }
         public bool[] AssignedShifts { get; set; }
         public double fitness { get; private set; }
-        double[] WorkdayFavorabilities { get; set; }
         int ShiftCount { get; set; }
         int DislikedShiftCount { get; set; }
         int OffDayShiftCount { get; set; }
@@ -41,8 +40,7 @@ namespace Genetic_Algorithm
             this.PersonalPreference = PREFERENCES_LIST[preferenceIndex];
             this.AssignedShifts = assignedShifts;
             RecountShifts();
-            WorkdayFavorabilities = new double[pCFG.WEEKDAYS];
-            RecalculateFavorability();
+            RecalculateFitness();
         }
 
         
@@ -56,45 +54,58 @@ namespace Genetic_Algorithm
             return shifts;
         }
 
-        public bool AttemptMutation(int day, bool force = false) {
+        double?[] LazyMutationWeights = new double?[pCFG.WEEKDAYS];
+        public bool AttemptMutation(int day, bool force = false) { //to change
+            double threshold = LazyMutationWeights[day] ??= FindMutationWeight(day) * CFG.MUTATION_CHANCE;
             double roll = Program.Rand.NextDouble();
-            double threshold = (1 - WorkdayFavorabilities[day]) * CFG.MUTATION_CHANCE;
             bool rollSuccess =  roll > threshold; //można dać prosto do ifa, ale latwiejszy debug jest tym sposobem
 
             if (force || rollSuccess) {
                 AssignedShifts[day] = !AssignedShifts[day];
-                //okazja na poprawę: dodawanie lub odejmowanie z liczb zmian, nielubianych zmian itd zamiast przeliczania od nowa
-                RecountShifts();
-                RecalculateFavorability();
+                int shiftChange = AssignedShifts[day] ? 1 : -1;
+                ShiftCount += shiftChange;
+                if (isDisliked(day)) DislikedShiftCount += shiftChange;
+                if (isOffDay(day)) OffDayShiftCount += shiftChange;
+                LazyMutationWeights[day] = FindMutationWeight(day);
                 return true;
             }
             return false;
         }
 
+
         public string ToString(int indent) {
+            RecalculateFitness();
+            for(int day = 0; day<pCFG.WEEKDAYS; day++) {
+                LazyMutationWeights[day] = FindMutationWeight(day);
+            }
             string message = new string(' ', 2*indent)+"Pracownik " + PreferenceIndex + ":\n";
             string indentString = new string(' ', 2 * indent + 2);
+            message += indentString + "Ilość dni przypisanych, nielubianych, wolnych: "+this.ShiftCount+", "+this.DislikedShiftCount+", " + this.OffDayShiftCount + "\n";
             message += indentString + "Dni przypisane: [" + String.Join(' ', AssignedShifts)+"]\n";
             message += indentString + "Dni nielubiane: [" + String.Join(' ', PersonalPreference.DislikedWorkdays) + "]\n";
             message += indentString + "Dni wolne     : [" + String.Join(' ', PersonalPreference.OffDays) + "]\n";
-            message += indentString + "Chęć wymiany  : [" + String.Join(' ', WorkdayFavorabilities) + "]\n";
+            message += indentString + "Chęć do pracy : [" + String.Join(' ', LazyMutationWeights) + "]\n";
             message += indentString + "Fitness       : " + this.fitness;
             return message;
-        } 
-
-        //todo: zmiana z obliczania fitnessu - trzeba odejmować od jedynki gdyby to bylo przeciwne
-        //w tej chwili, jeżeli są przypisane wolne dni to nie obniża to fitnessu tylko zwiększa odrobinę szanse mutacji
-        void RecalculateFavorability() {
-            this.fitness = 1;
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                WorkdayFavorabilities[day] = FindFavorability(AssignedShifts[day], day);
-                this.fitness += WorkdayFavorabilities[day] * (CFG.MAX_FITNESS -1) / pCFG.WEEKDAYS;
-            }
         }
 
-        //todo: zmiana musi wliczać wszystkie dni na których by to mialo efekt, z jakiegoś powodu mamy
-        //1 dla nielubianego dnia wolnego 6 z false na true
-        double FindMutationWeight(bool proposedShiftState, int day) {
+
+        public void RecalculateFitness() {
+            fitness = 0;
+            double overworkMalus = OverworkPenalty(ShiftCount) * CFG.OVERWORK_WEIGHT;
+            double dislikedMalus = DislikedPenalty(DislikedShiftCount) * CFG.DISLIKED_DAY_WEIGHT;
+            double offDayMalus = OffDayPenalty(OffDayShiftCount) * CFG.OFFDAY_WEIGHT;
+            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
+                fitness += 1
+                    - overworkMalus
+                    - (isDisliked(day) ? dislikedMalus: 0)
+                    - (isOffDay(day) ?  offDayMalus: 0);
+            }
+            fitness = (fitness + 1) * (CFG.MAX_FITNESS - 1) / pCFG.WEEKDAYS;
+        }
+
+        double FindMutationWeight(int day) {
+            bool proposedShiftState = !AssignedShifts[day];
             double weight = CFG.BASE_WEIGHT;
             double delta = (1-CFG.BASE_WEIGHT); //how much penalties matter
             int direction = proposedShiftState ? 1 : -1; //if there are penalties, we want them to increase the chance of unassigning
@@ -105,7 +116,7 @@ namespace Genetic_Algorithm
             return weight;
 
             double getOverworkWeight() {
-                return ShiftCountPenalty(CFG.MAX_WORKDAYS) //always apply, we use it to encourage assignment under 5 days
+                return OverworkPenalty(CFG.MAX_WORKDAYS) //always apply, we use it to encourage assignment under 5 days
                 * delta
                 * direction
                 * (isRiskingOverwork()? 1: -1)
@@ -141,14 +152,14 @@ namespace Genetic_Algorithm
             int max = PersonalPreference.OffDays.Length;
             if (max == 0) return 0;
             count = Math.Min(count, max);
-            double penalty = count / max;
+            double penalty = (double)count / max;
             return penalty;
         }
         bool isOffDay(int day) {
             return PersonalPreference.OffDays.Contains(day);
         }
 
-        double ShiftCountPenalty(int count) { //in case i ever change formulas
+        double OverworkPenalty(int count) { //in case i ever change formulas
             if (count > CFG.MAX_WORKDAYS) return 1;
             return 0;
         }
@@ -172,11 +183,13 @@ namespace Genetic_Algorithm
         void RecountShifts() {
             this.ShiftCount = 0;
             this.DislikedShiftCount = 0;
+            this.OffDayShiftCount = 0;
             for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                 bool isAssignedWork = AssignedShifts[day];
                 if (isAssignedWork) {
                     ShiftCount++;
-                    if (PersonalPreference.DislikedWorkdays.Contains(day)) DislikedShiftCount++;
+                    if (isDisliked(day)) DislikedShiftCount++;
+                    if (isOffDay(day)) OffDayShiftCount++;
                 }
             }
         }

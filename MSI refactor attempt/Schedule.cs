@@ -16,7 +16,7 @@ namespace Genetic_Algorithm
 
         Worker[] WorkersTable { get; set; }
         int[] CurrentShifts { get; set; }
-
+        public double ScheduleFitness { get; private set; }
         public Schedule(Schedule[] parents) : this() {
             List<int> pointByPointTargets = RandomizeCrossoverTargets();
             CloneCrossover(parents, pointByPointTargets);
@@ -25,6 +25,7 @@ namespace Genetic_Algorithm
             //być może zmiana obliczeń fitnessu wedle feasibility
             RandomMutations();
             RecountShifts();
+            this.ScheduleFitness = CalculateScheduleFitness();
         }
 
         public Schedule() {
@@ -85,6 +86,8 @@ namespace Genetic_Algorithm
         void PointByPointCrossover(Schedule[] parents, List<int> pointByPointTargets) {
             foreach (int workerIndex in pointByPointTargets) {
                 bool[] newSchedule = new bool[pCFG.WEEKDAYS];
+
+
                 for (int day = 0; day < pCFG.WEEKDAYS; day++) {
                     int winner = RouletteWinner(FindWorkerWeights(parents, workerIndex));
                     newSchedule[day] = parents[winner].WorkersTable[workerIndex].AssignedShifts[day];
@@ -131,8 +134,13 @@ namespace Genetic_Algorithm
         }
 
 
-        public double CalculateScheduleFitness() {
-            return WorkersTable.Sum(worker => worker.fitness);
+        double CalculateScheduleFitness() {
+            double fitness = 0;
+            foreach(Worker worker in WorkersTable) {
+                worker.RecalculateFitness();
+                fitness += worker.fitness;
+            }
+            return fitness;
         }
 
 

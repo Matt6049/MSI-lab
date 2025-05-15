@@ -75,7 +75,7 @@ namespace Genetic_Algorithm {
         private static bool ConvergenceCheck() {
             if (elites.Length <= 0) return false;
 
-            double maxFitness = elites[0].CalculateScheduleFitness();
+            double maxFitness = elites[0].ScheduleFitness;
             if(maxFitness != PreviousMax) {
                 ConvergenceCountdown = CFG.CONVERGENCE_COUNTDOWN_DURATION;
                 PreviousMax = maxFitness;
@@ -122,21 +122,21 @@ namespace Genetic_Algorithm {
         static int elitismCarryoverCount;
         private static Schedule[] FindEliteSchedules() {
             return currentPopulation.Where(sched => sched.CheckFeasibility())
-                                    .OrderBy(sched => sched.CalculateScheduleFitness())
+                                    .OrderBy(sched => sched.ScheduleFitness)
                                     .TakeLast(elitismCarryoverCount)
                                     .ToArray();
         }
 
 
         static void PrintPopulation() {
-            double max = currentPopulation.Max(Sched => Sched.CalculateScheduleFitness());
-            double avg = currentPopulation.Average(Sched => Sched.CalculateScheduleFitness());
+            double max = currentPopulation.Max(Sched => Sched.ScheduleFitness);
+            double avg = currentPopulation.Average(Sched => Sched.ScheduleFitness);
 
             Console.WriteLine($"Generacja: {currentGeneration}, Fitness maksymalny: {max}, Fitness średni: {avg}");
         }
 
         static void PrintBestSchedule() {
-            Schedule best = currentPopulation.OrderByDescending(Sched => Sched.CalculateScheduleFitness()).First();
+            Schedule best = currentPopulation.OrderByDescending(Sched => Sched.ScheduleFitness).First();
             best.PrintWorkerSchedules();
             best.PrintShifts();
         }
