@@ -140,6 +140,11 @@
             Schedule best = currentPopulation.OrderByDescending(Sched => Sched.ScheduleFitness).First();
             best.PrintWorkerSchedules();
             best.PrintShifts();
+            SaveToTxt(best);
+        }
+
+        static void SaveToTxt(Schedule schedToSave) {
+            File.WriteAllText("Results.txt", schedToSave.RequiredToString());
         }
     }
 }

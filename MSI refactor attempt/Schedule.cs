@@ -44,6 +44,40 @@
             }
         }
 
+        public string RequiredToString() {
+            int workerCountPadding = (int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1)) + 2;
+            string message = "Willingness to work\n" + new string(' ', workerCountPadding+2);
+            for(int day=1; day<=Config.WEEKDAYS; day++) {
+                message += ("D" + day).PadRight(4);
+            }
+            message = message.TrimEnd() + "\n";
+            foreach(Worker worker in WorkersTable) {
+                message += worker.WillingnessToString()+"\n";
+            }
+            message += "\nRequirements\n"+new string(' ', 4);
+
+            for (int day = 1; day <= Config.WEEKDAYS; day++) {
+                message += ("D" + day).PadRight(workerCountPadding+2);
+            }
+            message = message.TrimEnd()+"\nLP  ";
+
+            for(int day=0; day<Config.WEEKDAYS; day++) {
+                message += NEEDED_SHIFTS[day].ToString().PadRight(workerCountPadding+2);
+            }
+            message = message.TrimEnd()+"\n\nSchedule\n"+new string(' ', workerCountPadding+2);
+
+            for(int day=1; day <= Config.WEEKDAYS; day++) {
+                message += ("D" + day).PadRight(4);
+            }
+            message = message.TrimEnd() + "\n";
+
+            foreach(Worker worker in WorkersTable) {
+                message += worker.ShiftsToString() + "\n";
+            }
+
+            return message;
+        }
+
         public void ForceFeasibility() {
             for (int day = 0; day < Config.WEEKDAYS; day++) {
                 if (CurrentShifts[day] >= NEEDED_SHIFTS[day]) continue;

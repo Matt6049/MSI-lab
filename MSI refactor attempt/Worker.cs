@@ -85,11 +85,33 @@ namespace Genetic_Algorithm
             message += indentString + "Dni przypisane: [" + String.Join(' ', AssignedShifts)+"]\n";
             message += indentString + "Dni nielubiane: [" + String.Join(' ', PersonalPreference.DislikedWorkdays) + "]\n";
             message += indentString + "Dni wolne     : [" + String.Join(' ', PersonalPreference.OffDays) + "]\n";
-            message += indentString + "Chęć do pracy : [" + String.Join(' ', LazyMutationWeights) + "]\n";
-            message += indentString + "Fitness       : " + this.fitness;
+            message += indentString + "Chęć mutacji  : [" + String.Join(' ', LazyMutationWeights.Select(w => Math.Round((decimal)w, 2))) + "]\n";
+            message += indentString + "Fitness       : " + Math.Round(this.fitness, 2);
             return message;
         }
 
+        public string WillingnessToString() {
+            RecalculateFitness();
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
+                LazyMutationWeights[day] = FindMutationWeight(day);
+            }
+            string message = ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1))+4);
+            for(int day=0; day<Config.WEEKDAYS; day++) {
+                message += Math.Round((double)(AssignedShifts[day] ? 1 - LazyMutationWeights[day] : LazyMutationWeights[day])+1e-3).ToString().PadRight(4);
+            }
+            message.TrimEnd();
+            return message;
+        }
+
+        public string ShiftsToString() {
+            string message = ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1)) + 4);
+
+            for (int day=0; day<Config.WEEKDAYS; day++) {
+                message += (AssignedShifts[day]? "1" : "0").ToString().PadRight(4);
+            }
+            message = message.TrimEnd();
+            return message;
+        }
 
         public void RecalculateFitness() {
             fitness = 0;

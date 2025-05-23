@@ -1,15 +1,10 @@
-﻿using Genetic_Algorithm;
-using Newtonsoft.Json;
-using System.Linq;
-using CFG = Genetic_Algorithm.Config.ScheduleConfig;
-using pCFG = Genetic_Algorithm.Config;
-
+﻿using Newtonsoft.Json;
 
 namespace Genetic_Algorithm {
 
     public class Config {
         private static int ConfigIndexToUse = -1; //-1 for fresh instance using the below configs, 0 for newest
-        public static Config ConfigSingleton { get; } = Config.InitializeConfig();
+        public static Config ConfigSingleton { get; private set; }
 
         public ProgramConfig pCFG { get; } = new ProgramConfig();
         public ScheduleConfig sCFG { get; } = new ScheduleConfig();
@@ -17,7 +12,7 @@ namespace Genetic_Algorithm {
 
 
         public const int WEEKDAYS = 7;
-        public int WORKER_COUNT { get; private set; } = 50;
+        public int WORKER_COUNT { get; private set; } = 5;
         public int GENERATION_CAP { get; private set; } = 1000;
 
         public class ProgramConfig {
@@ -30,11 +25,11 @@ namespace Genetic_Algorithm {
             public double FORCE_FEASIBILITY_FREQUENCY { get; private set; } = 100;
             public int FORCE_FEASIBILITY_LENGTH { get; private set; } = 25;
             //if no change for n generations, force feasibility and end after converging again
-            public int CONVERGENCE_COUNTDOWN_DURATION { get; private set; } = 50;
+            public int CONVERGENCE_COUNTDOWN_DURATION { get; private set; } = 100;
         }
 
         public class ScheduleConfig {
-            public double RANDOM_MUTATION_RATIO { get; private set; } = 0.5;
+            public double RANDOM_MUTATION_RATIO { get; private set; } = 2;
             public double POINT_BY_POINT_RATIO { get; private set; } = 0.5;
             public double[] SHIFT_PROPORTIONS { get; private set; } = [0.8, 0.8, 0.8, 0.8, 0.8, 0.6, 0.4];
         }
@@ -57,9 +52,8 @@ namespace Genetic_Algorithm {
             public double OFFDAY_CHANCE { get; private set; } = 0.2;
         }
 
-        static Config InitializeConfig() {
+        static Config() {
             List<string> configList;
-            Config outputConfig;
             if (!File.Exists("Config.json")) {
                 configList = new();
             }
@@ -68,18 +62,20 @@ namespace Genetic_Algorithm {
                 configList = JsonConvert.DeserializeObject<List<string>>(listJSON) ?? new();
             }
             if (ConfigIndexToUse == -1 || configList == null) {
-                outputConfig = new();
+                ConfigSingleton = new();
             }
             else {
-                outputConfig = JsonConvert.DeserializeObject<Config>(configList[ConfigIndexToUse]) ?? new();
+                ConfigSingleton = JsonConvert.DeserializeObject<Config>(configList[ConfigIndexToUse]) ?? new();
             }
-            string configJSON = JsonConvert.SerializeObject(outputConfig);
+            string configJSON = JsonConvert.SerializeObject(ConfigSingleton);
+            Console.WriteLine(configJSON);
             configList.Insert(0, configJSON);
             string listStringified = JsonConvert.SerializeObject(configList);
             File.WriteAllText("Config.json", listStringified);
-            return outputConfig;
         }
 
         private Config() {}
+
+
     }
 }
