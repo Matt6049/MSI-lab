@@ -1,61 +1,126 @@
-﻿using CFG = Genetic_Algorithm.Config.ScheduleConfig;
-using pCFG = Genetic_Algorithm.Config;
-namespace Genetic_Algorithm
+﻿namespace Genetic_Algorithm
 {
     public class Schedule
     {
         static readonly int[] NEEDED_SHIFTS;
+        static readonly Config CFG = Config.ConfigSingleton;
+        static readonly Config.ScheduleConfig sCFG = CFG.sCFG;
 
         static Schedule() {
-            NEEDED_SHIFTS = new int[pCFG.WEEKDAYS];
-            for (int day=0; day< pCFG.WEEKDAYS; day++) {
-                NEEDED_SHIFTS[day] = (int)Math.Ceiling(pCFG.WORKER_COUNT * CFG.SHIFT_PROPORTIONS[day]);
+            NEEDED_SHIFTS = new int[Config.WEEKDAYS];
+            for (int day=0; day< Config.WEEKDAYS; day++) {
+                NEEDED_SHIFTS[day] = (int)Math.Ceiling(CFG.WORKER_COUNT * sCFG.SHIFT_PROPORTIONS[day]);
             }
-
         }
 
 
         Worker[] WorkersTable { get; set; }
         int[] CurrentShifts { get; set; }
-
+        public double ScheduleFitness { get; private set; }
         public Schedule(Schedule[] parents) : this() {
             List<int> pointByPointTargets = RandomizeCrossoverTargets();
-
             CloneCrossover(parents, pointByPointTargets);
             PointByPointCrossover(parents, pointByPointTargets);
             //TODO: modyfikacja metod mutacyjnych, aby usunąć szansę nieskończoności prób
             //być może zmiana obliczeń fitnessu wedle feasibility
             RandomMutations();
-            if(Program.currentGeneration % pCFG.GENERATION_COUNT/10 == 0
-                || Program.currentGeneration > pCFG.GENERATION_COUNT*0.9) FeasibilityMutations();
+            RecountShifts();
+            this.ScheduleFitness = CalculateScheduleFitness();
         }
 
         public Schedule() {
-            WorkersTable = new Worker[pCFG.WORKER_COUNT];
-            CurrentShifts = new int[pCFG.WEEKDAYS];
+            WorkersTable = new Worker[CFG.WORKER_COUNT];
+            CurrentShifts = new int[Config.WEEKDAYS];
         }
 
+        public void PrintShifts() {
+            Console.WriteLine("Oczekiwane ilości zmian: [" + String.Join(' ', Schedule.NEEDED_SHIFTS) + "]");
+            Console.WriteLine("Rzeczywiste zmiany     : [" + String.Join(' ', CurrentShifts) + "]");
+        }
 
-        void FeasibilityMutations() {
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                if (NEEDED_SHIFTS[day] == CurrentShifts[day]) continue;
-               
-                bool mutationWanted = NEEDED_SHIFTS[day] < CurrentShifts[day];
-                Worker[] mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == !mutationWanted).ToArray();
-                
-                if (mutationCandidates.Length == 0) continue;
+        public void PrintWorkerSchedules() {
+            foreach (Worker worker in WorkersTable) {
+                Console.WriteLine(worker.ToString(1));
+            }
+        }
 
-                while (NEEDED_SHIFTS[day] != CurrentShifts[day]) {
-                    int worker = Program.Rand.Next(mutationCandidates.Length);
-                    if (mutationCandidates[worker].AttemptMutation(day)) {
-                        NEEDED_SHIFTS[day] += mutationWanted == true? 1 : -1;
+        public string FormattedToString() {
+            int workerCountPadding = (int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1)) + 2;
+            string message = "Willingness to work\n" + new string(' ', workerCountPadding+2);
+            for(int day=1; day<=Config.WEEKDAYS; day++) {
+                message += ("D" + day).PadRight(4);
+            }
+            message = message.TrimEnd() + "\n";
+            foreach(Worker worker in WorkersTable) {
+                message += worker.WillingnessToString("   ")+"\n";
+            }
+            message += "\nRequirements\n"+new string(' ', 4);
+
+            for (int day = 1; day <= Config.WEEKDAYS; day++) {
+                message += ("D" + day).PadRight(workerCountPadding+2);
+            }
+            message = message.TrimEnd()+"\nLP  ";
+
+            for(int day=0; day<Config.WEEKDAYS; day++) {
+                message += NEEDED_SHIFTS[day].ToString().PadRight(workerCountPadding+2);
+            }
+            message = message.TrimEnd()+"\n\nSchedule\n"+new string(' ', workerCountPadding+2);
+
+            for(int day=1; day <= Config.WEEKDAYS; day++) {
+                message += ("D" + day).PadRight(4);
+            }
+            message = message.TrimEnd() + "\n";
+
+            foreach(Worker worker in WorkersTable) {
+                message += worker.ShiftsToString("   ") + "\n";
+            }
+
+            return message+"\n";
+        }
+
+        public string ToCSVString() {
+            string message = String.Join(',', NEEDED_SHIFTS)+",";
+            foreach(Worker worker in WorkersTable) {
+                message += worker.WillingnessToString(",", false)+",";
+            }
+            foreach(Worker worker in WorkersTable) {
+                message += worker.ShiftsToString(",", false)+",";
+            }
+
+            return message.TrimEnd(',');
+        }
+
+        public void ForceFeasibility() {
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
+                if (CurrentShifts[day] >= NEEDED_SHIFTS[day]) continue;
+                List<Worker> mutationCandidates = WorkersTable.Where(worker => worker.AssignedShifts[day] == false).ToList();
+
+                while (NEEDED_SHIFTS[day] > CurrentShifts[day]) {
+                    if (mutationCandidates.Count == 0) throw new Exception("Not enough workers to cover day " + day);
+                    Worker candidate = mutationCandidates[Program.Rand.Next(mutationCandidates.Count)];
+                    bool success = candidate.AttemptMutation(day);
+
+                    if (success) {
+                        CurrentShifts[day]++;
+                        mutationCandidates.Remove(candidate);
                     }
                 }
             }
         }
 
+        public bool CheckFeasibility() {
+            bool feasible = true;
+            for(int day=0; day<Config.WEEKDAYS; day++) {
+                if (NEEDED_SHIFTS[day] > CurrentShifts[day]) {
+                    feasible = false;
+                    break;
+                }
+            }
+            return feasible;
+        }
+
         void RandomMutations() {
-            int mutationCount = (int)Math.Floor(Program.currentGeneration/ pCFG.GENERATION_COUNT * CFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * pCFG.WEEKDAYS);
+            int mutationCount = (int)Math.Floor(Program.currentGeneration/ CFG.GENERATION_CAP * sCFG.RANDOM_MUTATION_RATIO * WorkersTable.Length * Config.WEEKDAYS);
             for (int i = 0; i < mutationCount; i++) {
                 int worker = Program.Rand.Next(WorkersTable.Length); //można tu zmienić aby nie wybierać tych samych kandydatów mutacji, ale zmniejszy to obszar przeszukiwany
                 int day = Program.Rand.Next(7);
@@ -66,8 +131,10 @@ namespace Genetic_Algorithm
 
         void PointByPointCrossover(Schedule[] parents, List<int> pointByPointTargets) {
             foreach (int workerIndex in pointByPointTargets) {
-                bool[] newSchedule = new bool[pCFG.WEEKDAYS];
-                for (int day = 0; day < pCFG.WEEKDAYS; day++) {
+                bool[] newSchedule = new bool[Config.WEEKDAYS];
+
+
+                for (int day = 0; day < Config.WEEKDAYS; day++) {
                     int winner = RouletteWinner(FindWorkerWeights(parents, workerIndex));
                     newSchedule[day] = parents[winner].WorkersTable[workerIndex].AssignedShifts[day];
                 }
@@ -95,7 +162,7 @@ namespace Genetic_Algorithm
         List<int> RandomizeCrossoverTargets() {
             List<int> pointByPointWorkers = Enumerable.Range(0, WorkersTable.Length).ToList();
 
-            for (int i = 0; i < pointByPointWorkers.Count * (1 - CFG.POINT_BY_POINT_RATIO); i++) {
+            for (int i = 0; i < pointByPointWorkers.Count * (1 - sCFG.POINT_BY_POINT_RATIO); i++) {
                 pointByPointWorkers.RemoveAt(Program.Rand.Next(pointByPointWorkers.Count));
             }
             return pointByPointWorkers;
@@ -113,22 +180,32 @@ namespace Genetic_Algorithm
         }
 
 
-        public double CalculateScheduleFitness() {
-            return WorkersTable.Sum(worker => worker.fitness);
+        double CalculateScheduleFitness() {
+            double fitness = 0;
+            foreach(Worker worker in WorkersTable) {
+                worker.RecalculateFitness();
+                fitness += worker.fitness;
+            }
+            return fitness;
         }
 
+        public void GenerateBlankWorkers() {
+            for (int i = 0; i < WorkersTable.Length; i++) {
+                WorkersTable[i] = new Worker(i, new bool[Config.WEEKDAYS]);
+            }
+        }
 
         public void RandomizeWorkers() {
             for (int i = 0; i < WorkersTable.Length; i++) {
                 WorkersTable[i] = new Worker(i);
             }
             CalculateScheduleFitness();
-            FeasibilityMutations();
             RecountShifts();
+            ForceFeasibility();
         }
         
         void RecountShifts() {
-            for(int day = 0; day<pCFG.WEEKDAYS; day++) {
+            for(int day = 0; day<Config.WEEKDAYS; day++) {
                 CurrentShifts[day] = this.WorkersTable.
                                      Where(worker => worker.AssignedShifts[day]).
                                      Count();

@@ -1,22 +1,26 @@
 ﻿using Newtonsoft.Json;
-using pCFG = Genetic_Algorithm.Config;
-using CFG = Genetic_Algorithm.Config.WorkerConfig;
 
 namespace Genetic_Algorithm
 {
     public class Worker {
-        static List<Preferences> PREFERENCES_LIST {get;}
+        static Config CFG = Config.ConfigSingleton;
+        static Config.WorkerConfig wCFG = CFG.wCFG;
 
+        static List<Preferences> PREFERENCES_LIST { get; set; }
 
-        static Worker() {
-            if (File.Exists("testy")) {
+        public static void InstantiatePreferences() {
+            if(PREFERENCES_LIST != null && !wCFG.GENERATE_NEW) {
+                return;
+            }
+
+            if (File.Exists("testy") && !wCFG.GENERATE_NEW) {
                 string list = File.ReadAllText("testy");
                 PREFERENCES_LIST = JsonConvert.DeserializeObject<List<Preferences>>(list);
-                if (PREFERENCES_LIST.Count != pCFG.WORKER_COUNT) File.Delete("testy");
+                if (PREFERENCES_LIST.Count != CFG.WORKER_COUNT) File.Delete("testy");
             }
-            if (!File.Exists("testy")) {
+            else {
                 PREFERENCES_LIST = new();
-                for (int i = 0; i < pCFG.WORKER_COUNT; i++) {
+                for (int i = 0; i < CFG.WORKER_COUNT; i++) {
                     PREFERENCES_LIST.Add(new());
                 }
                 string s = JsonConvert.SerializeObject(PREFERENCES_LIST);
@@ -24,121 +28,217 @@ namespace Genetic_Algorithm
             }
         }
 
-        
+        //todo: make assigned shifts, fitness, workday favorabilities and shift recounts lazy
         public int PreferenceIndex { get; init; }
         public bool[] AssignedShifts { get; set; }
         public double fitness { get; private set; }
-        double[] WorkdayFavorabilities { get; set; }
         int ShiftCount { get; set; }
         int DislikedShiftCount { get; set; }
+        int OffDayShiftCount { get; set; }
         Preferences PersonalPreference { get; set; }
 
         public Worker(int preferenceIndex) : this(preferenceIndex, GetRandomShifts()) { }
 
         public Worker(int preferenceIndex, bool[] assignedShifts) {
-            if (preferenceIndex >= pCFG.WORKER_COUNT) throw new Exception("Invalid preferenceIndex, above worker limit");
+            if (preferenceIndex >= CFG.WORKER_COUNT) throw new Exception("Invalid preferenceIndex, above worker limit");
             this.PreferenceIndex = preferenceIndex;
             this.PersonalPreference = PREFERENCES_LIST[preferenceIndex];
             this.AssignedShifts = assignedShifts;
             RecountShifts();
-            WorkdayFavorabilities = new double[pCFG.WEEKDAYS];
-            RecalculateFavorability();
+            RecalculateFitness();
         }
 
+        
         static bool[] GetRandomShifts() {
-            bool[] shifts = new bool[pCFG.WEEKDAYS];
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                if (Program.Rand.NextDouble() < (double)(CFG.MAX_WORKDAYS) / pCFG.WEEKDAYS) {
+            bool[] shifts = new bool[Config.WEEKDAYS];
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
+                if (Program.Rand.NextDouble() < (double)(wCFG.MAX_WORKDAYS) / Config.WEEKDAYS) {
                     shifts[day] = true;
                 }
             }
             return shifts;
         }
 
-        public bool AttemptMutation(int day) {
-            if(Program.Rand.NextDouble() < (1 - WorkdayFavorabilities[day])* CFG.MUTATION_CHANCE) {
+        double?[] LazyMutationWeights = new double?[Config.WEEKDAYS];
+        public bool AttemptMutation(int day, bool force = false) { //to change
+            double threshold = LazyMutationWeights[day] ??= FindMutationWeight(day) * wCFG.MUTATION_CHANCE;
+            double roll = Program.Rand.NextDouble();
+            bool rollSuccess =  roll > threshold; //można dać prosto do ifa, ale latwiejszy debug jest tym sposobem
+
+            if (force || rollSuccess) {
                 AssignedShifts[day] = !AssignedShifts[day];
-                //okazja na poprawę: dodawanie lub odejmowanie z liczb zmian, nielubianych zmian itd zamiast przeliczania od nowa
-                RecountShifts();
-                RecalculateFavorability();
+                int shiftChange = AssignedShifts[day] ? 1 : -1;
+                ShiftCount += shiftChange;
+                if (isDisliked(day)) DislikedShiftCount += shiftChange;
+                if (isOffDay(day)) OffDayShiftCount += shiftChange;
+                LazyMutationWeights[day] = FindMutationWeight(day);
                 return true;
             }
             return false;
         }
 
-        void RecalculateFavorability() {
-            this.fitness = 1;
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
-                WorkdayFavorabilities[day] = FindFavorability(AssignedShifts[day], day);
-                this.fitness += WorkdayFavorabilities[day] * (CFG.MAX_FITNESS -1) / pCFG.WEEKDAYS;
+
+        public string ToString(int indent) {
+            RecalculateFitness();
+            for(int day = 0; day<Config.WEEKDAYS; day++) {
+                LazyMutationWeights[day] = FindMutationWeight(day);
+            }
+            string message = new string(' ', 2*indent)+"Pracownik " + PreferenceIndex + ":\n";
+            string indentString = new string(' ', 2 * indent + 2);
+            message += indentString + "Ilość dni przypisanych, nielubianych, wolnych: "+this.ShiftCount+", "+this.DislikedShiftCount+", " + this.OffDayShiftCount + "\n";
+            message += indentString + "Dni przypisane: [" + String.Join(' ', AssignedShifts)+"]\n";
+            message += indentString + "Dni nielubiane: [" + String.Join(' ', PersonalPreference.DislikedWorkdays) + "]\n";
+            message += indentString + "Dni wolne     : [" + String.Join(' ', PersonalPreference.OffDays) + "]\n";
+            message += indentString + "Chęć mutacji  : [" + String.Join(' ', LazyMutationWeights.Select(w => Math.Round((decimal)w, 2))) + "]\n";
+            message += indentString + "Fitness       : " + Math.Round(this.fitness, 2);
+            return message;
+        }
+
+        public string WillingnessToString(string delimiter, bool addPrefix = true) {
+            RecalculateFitness();
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
+                LazyMutationWeights[day] = FindMutationWeight(day);
+            }
+            string message = "";
+            if(addPrefix) message += ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1))+4);
+
+            for(int day=0; day<Config.WEEKDAYS; day++) {
+                message += Math.Round((double)(AssignedShifts[day] ? 1 - LazyMutationWeights[day] : LazyMutationWeights[day]) + 1e-3) + delimiter;
+            }
+            
+            return message.TrimEnd(delimiter.ToCharArray());
+        }
+
+        public string ShiftsToString(string delimiter, bool addPrefix = true) {
+            string message = "";
+            if (addPrefix) {
+                message += ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT - 1)) + 4);
+            }
+
+            for (int day=0; day<Config.WEEKDAYS; day++) {
+                message += (AssignedShifts[day]? "1" : "0") + delimiter;
+            }
+            return message.TrimEnd(delimiter.ToCharArray());
+        }
+
+        public void RecalculateFitness() {
+            fitness = 0;
+            double overworkMalus = OverworkPenalty(ShiftCount) * wCFG.OVERWORK_WEIGHT;
+            double dislikedMalus = DislikedPenalty(DislikedShiftCount) * wCFG.DISLIKED_DAY_WEIGHT;
+            double offDayMalus = OffDayPenalty(OffDayShiftCount) * wCFG.OFFDAY_WEIGHT;
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
+                fitness += 1
+                    - overworkMalus
+                    - (isDisliked(day) ? dislikedMalus: 0)
+                    - (isOffDay(day) ?  offDayMalus: 0);
+            }
+            fitness = (fitness + 1) * (wCFG.MAX_FITNESS - 1) / Config.WEEKDAYS;
+        }
+
+        double FindMutationWeight(int day) {
+            bool proposedShiftState = !AssignedShifts[day];
+            double weight = wCFG.BASE_WEIGHT;
+            double delta = (1-wCFG.BASE_WEIGHT); //how much penalties matter
+            int direction = proposedShiftState ? 1 : -1; //if there are penalties, we want them to increase the chance of unassigning
+            weight -= getOverworkWeight();
+            weight -= getDislikedWeight();
+            weight -= getOffDayWeight();
+
+            return weight;
+
+            double getOverworkWeight() {
+                return OverworkPenalty(wCFG.MAX_WORKDAYS) //always apply, we use it to encourage assignment under 5 days
+                * delta
+                * direction
+                * (isRiskingOverwork()? 1: -1)
+                * wCFG.OVERWORK_WEIGHT;
+            }
+
+            double getDislikedWeight() {
+                bool dayIsDisliked = isDisliked(day);
+                int retroactiveIncrease = (dayIsDisliked && !proposedShiftState) ? 1 : 0; //unless removing a disliked day, keep in mind the risk of an increased penalty
+                return DislikedPenalty(DislikedShiftCount + retroactiveIncrease)
+                    * delta
+                    * direction
+                    * (dayIsDisliked ? 1 : -1)
+                    * wCFG.DISLIKED_DAY_WEIGHT;
+            }
+
+            //almost identical to disliked days
+            double getOffDayWeight() {
+                bool dayIsOff = isOffDay(day);
+                int retroactiveIncrease = (dayIsOff && !proposedShiftState) ? 1 : 0;
+                return OffDayPenalty(OffDayShiftCount+retroactiveIncrease) //increasing if proposed shift state = true and is offday
+                    * delta
+                    * direction
+                    * (dayIsOff? 1 : -1) 
+                    * wCFG.OFFDAY_WEIGHT;
             }
         }
 
-        double FindFavorability(bool proposedShiftState, int day) {
 
-            double weight = 1;
-            weight -= OffDayPenalty(day)* CFG.OFFDAY_WEIGHT;
-            weight -= OverworkPenalty(day)* CFG.OVERWORK_WEIGHT;
-            weight -= DislikedPenalty(day)* CFG.DISLIKED_DAY_WEIGHT;
 
-            return proposedShiftState ? weight : 1 - weight;
+
+        double OffDayPenalty(int count) {
+            int max = PersonalPreference.OffDays.Length;
+            if (max == 0) return 0;
+            count = Math.Min(count, max);
+            double penalty = (double)count / max;
+            return penalty;
+        }
+        bool isOffDay(int day) {
+            return PersonalPreference.OffDays.Contains(day);
         }
 
-
-        double OffDayPenalty(int day) {
-            if (PersonalPreference.OffDays.Contains(day)) {
-                return 1 / PersonalPreference.OffDays.Length;
-            }
+        double OverworkPenalty(int count) { //in case i ever change formulas
+            if (count > wCFG.MAX_WORKDAYS) return 1;
             return 0;
         }
-
-
-        double OverworkPenalty(int day) {
-            if (AssignedShifts[day] && ShiftCount > CFG.MAX_WORKDAYS
-                || !AssignedShifts[day] && ShiftCount + 1 > CFG.MAX_WORKDAYS) {
-                return 1;
-            }
-            return 0;
+        bool isRiskingOverwork() {
+            return ShiftCount >= wCFG.MAX_WORKDAYS;
         }
 
-        double DislikedPenalty(int day) {
-            if (PersonalPreference.DislikedWorkdays.Contains(day)) {
-                return Math.Pow(8, (
-                    AssignedShifts[day]? DislikedShiftCount : DislikedShiftCount+1) 
-                    / PersonalPreference.DislikedWorkdays.Length)/8;
-            }
-            return 0;
-        }
 
+        double DislikedPenalty(int count) {
+            int max = PersonalPreference.DislikedWorkdays.Length;
+            if (max == 0) return 0;
+
+            count = Math.Min(count, max);
+            double penalty = Math.Pow(8, ((double)count / max))/8;
+            return penalty; 
+        }
+        bool isDisliked(int day) {
+            return PersonalPreference.DislikedWorkdays.Contains(day);
+        }
 
         void RecountShifts() {
             this.ShiftCount = 0;
             this.DislikedShiftCount = 0;
-            for (int day = 0; day < pCFG.WEEKDAYS; day++) {
+            this.OffDayShiftCount = 0;
+            for (int day = 0; day < Config.WEEKDAYS; day++) {
                 bool isAssignedWork = AssignedShifts[day];
                 if (isAssignedWork) {
                     ShiftCount++;
-                    if (PersonalPreference.DislikedWorkdays.Contains(day)) DislikedShiftCount++;
+                    if (isDisliked(day)) DislikedShiftCount++;
+                    if (isOffDay(day)) OffDayShiftCount++;
                 }
             }
         }
+    
 
-        private class Preferences {
-
-
+    private class Preferences {
             public int[] DislikedWorkdays { get; private set; }
             public int[] OffDays { get; private set; }
 
             public Preferences() {
                 RandomizeDisliked();
                 RandomizeOffdays();
-
             }
 
             void RandomizeDisliked() {
-                List<int> remainingDays = Enumerable.Range(0, pCFG.WEEKDAYS).ToList();
+                List<int> remainingDays = Enumerable.Range(0, Config.WEEKDAYS).ToList();
                 int dislikedCount = 0;
-                while (Program.Rand.NextDouble() < CFG.DISLIKED_CHANCE && dislikedCount < CFG.MAX_DISLIKED_DAYS) {
+                while (Program.Rand.NextDouble() < wCFG.DISLIKED_CHANCE && dislikedCount < wCFG.MAX_DISLIKED_DAYS) {
                     dislikedCount++;
                 }
                 DislikedWorkdays = new int[dislikedCount];
@@ -149,13 +249,15 @@ namespace Genetic_Algorithm
                     remainingDays.RemoveAll(day => day == DislikedWorkdays[i]);
                 }
 
+                DislikedWorkdays = DislikedWorkdays.Order().ToArray();
+
             }
 
             void RandomizeOffdays() {
                 int offdayCount = 0;
-                List<int> remainingDays = Enumerable.Range(0, pCFG.WEEKDAYS).ToList();
-                for (int i = 0; i < pCFG.WEEKDAYS; i++) {
-                    if (Program.Rand.NextDouble() < CFG.OFFDAY_CHANCE) {
+                List<int> remainingDays = Enumerable.Range(0, Config.WEEKDAYS).ToList();
+                for (int i = 0; i < Config.WEEKDAYS; i++) {
+                    if (Program.Rand.NextDouble() < wCFG.OFFDAY_CHANCE) {
                         offdayCount++;
                     }
                 }
@@ -166,6 +268,8 @@ namespace Genetic_Algorithm
                     OffDays[i] = remainingDays[Program.Rand.Next(remainingDays.Count)];
                     remainingDays.RemoveAll(day => day == OffDays[i]);
                 }
+
+                OffDays = OffDays.Order().ToArray();
             }
         }
     }
