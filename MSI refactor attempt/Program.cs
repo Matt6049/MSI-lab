@@ -12,14 +12,42 @@
             CONVERGED
         }
 
+        static DateTime timeStart;
+        static DateTime timeEnd;
         static Schedule[] currentPopulation;
-        static Schedule[] elites = [];
-
+        static Schedule[] elites;
+        static string csvResults = "";
 
         static void Main(string[] args) {
-            DateTime timeStart = DateTime.Now;
-            currentPopulation = new Schedule[pCFG.SCHEDULE_COUNT];
+            if (pCFG.SAVING_TO_CSV) csvResults = GenerateCSVHeader() + "\r\n";
+
+            for (int repeats = 0; repeats < pCFG.REPEAT_COUNT; repeats++) {
+                timeStart = DateTime.Now;
+                Worker.InstantiatePreferences();
+                currentPopulation = new Schedule[pCFG.SCHEDULE_COUNT];
+                if (pCFG.RUN_GENETIC_ALGORITHM) {
+                    RunGeneticAlgorithm();
+                }
+                else {
+                    for (int i = 0; i < pCFG.SCHEDULE_COUNT; i++) {
+                        currentPopulation[i] = new();
+                        currentPopulation[i].GenerateBlankWorkers();
+                    }
+                }
+
+                timeEnd = DateTime.Now;
+                Schedule Best = PrintBestSchedule();
+                if (pCFG.SAVING_TO_CSV) csvResults += Best.ToCSVString()+"\r\n";
+                PrintPopulation();
+                Console.WriteLine($"Czas: {timeEnd - timeStart}");
+            }
+
+            if (pCFG.SAVING_TO_CSV) File.WriteAllText("results.csv", csvResults.TrimEnd('\r', '\n'));
+        }
+
+        static void RunGeneticAlgorithm() {
             elitismCarryoverCount = (int)Math.Ceiling(pCFG.SCHEDULE_COUNT * pCFG.ELITISM_RATIO);
+            elites = [];
             currentGeneration = 1;
 
 
@@ -41,11 +69,6 @@
                 ProcessFeasibility(convergenceState);
                 currentGeneration++;
             }
-            DateTime timeEnd = DateTime.Now;
-            PrintBestSchedule();
-            PrintPopulation();
-            Console.WriteLine($"Czas: {timeEnd - timeStart}");
-            
         }
 
         private static Schedule[] CreateNextPopulation() {
@@ -136,15 +159,34 @@
             Console.WriteLine($"Generacja: {currentGeneration}, Fitness maksymalny: {max}, Fitness średni: {avg}");
         }
 
-        static void PrintBestSchedule() {
+        static Schedule PrintBestSchedule() {
             Schedule best = currentPopulation.OrderByDescending(Sched => Sched.ScheduleFitness).First();
             best.PrintWorkerSchedules();
             best.PrintShifts();
             SaveToTxt(best);
+            return best;
         }
 
         static void SaveToTxt(Schedule schedToSave) {
-            File.WriteAllText("Results.txt", schedToSave.RequiredToString());
+            File.AppendAllText("Results.txt", "Run "+DateTime.Now+"\n\n"+schedToSave.FormattedToString());
+        }
+
+        static string GenerateCSVHeader() {
+            string csv = "";
+            for (int day = 1; day <= Config.WEEKDAYS; day++) { //header
+                csv += $"D_{day},";
+            }
+            for (int worker = 0; worker <= CFG.WORKER_COUNT; worker++) {
+                for (int day = 1; day < Config.WEEKDAYS; day++) {
+                    csv += $"W_{worker}_{day},";
+                }
+            }
+            for (int worker = 0; worker <= CFG.WORKER_COUNT; worker++) {
+                for (int day = 1; day < Config.WEEKDAYS; day++) {
+                    csv += $"A_{worker}_{day},";
+                }
+            }
+            return csv.TrimEnd(',');
         }
     }
 }

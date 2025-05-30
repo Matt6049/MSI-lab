@@ -6,15 +6,19 @@ namespace Genetic_Algorithm
         static Config CFG = Config.ConfigSingleton;
         static Config.WorkerConfig wCFG = CFG.wCFG;
 
-        static List<Preferences> PREFERENCES_LIST { get; }
+        static List<Preferences> PREFERENCES_LIST { get; set; }
 
-        static Worker() {
-            if (File.Exists("testy")) {
+        public static void InstantiatePreferences() {
+            if(PREFERENCES_LIST != null && !wCFG.GENERATE_NEW) {
+                return;
+            }
+
+            if (File.Exists("testy") && !wCFG.GENERATE_NEW) {
                 string list = File.ReadAllText("testy");
                 PREFERENCES_LIST = JsonConvert.DeserializeObject<List<Preferences>>(list);
                 if (PREFERENCES_LIST.Count != CFG.WORKER_COUNT) File.Delete("testy");
             }
-            if (!File.Exists("testy")) {
+            else {
                 PREFERENCES_LIST = new();
                 for (int i = 0; i < CFG.WORKER_COUNT; i++) {
                     PREFERENCES_LIST.Add(new());
@@ -23,7 +27,7 @@ namespace Genetic_Algorithm
                 File.WriteAllText("testy", s);
             }
         }
-        
+
         //todo: make assigned shifts, fitness, workday favorabilities and shift recounts lazy
         public int PreferenceIndex { get; init; }
         public bool[] AssignedShifts { get; set; }
@@ -90,27 +94,31 @@ namespace Genetic_Algorithm
             return message;
         }
 
-        public string WillingnessToString() {
+        public string WillingnessToString(string delimiter, bool addPrefix = true) {
             RecalculateFitness();
             for (int day = 0; day < Config.WEEKDAYS; day++) {
                 LazyMutationWeights[day] = FindMutationWeight(day);
             }
-            string message = ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1))+4);
+            string message = "";
+            if(addPrefix) message += ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1))+4);
+
             for(int day=0; day<Config.WEEKDAYS; day++) {
-                message += Math.Round((double)(AssignedShifts[day] ? 1 - LazyMutationWeights[day] : LazyMutationWeights[day])+1e-3).ToString().PadRight(4);
+                message += Math.Round((double)(AssignedShifts[day] ? 1 - LazyMutationWeights[day] : LazyMutationWeights[day]) + 1e-3) + delimiter;
             }
-            message.TrimEnd();
-            return message;
+            
+            return message.TrimEnd(delimiter.ToCharArray());
         }
 
-        public string ShiftsToString() {
-            string message = ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1)) + 4);
+        public string ShiftsToString(string delimiter, bool addPrefix = true) {
+            string message = "";
+            if (addPrefix) {
+                message += ("P" + PreferenceIndex).PadRight((int)Math.Floor(Math.Log10(CFG.WORKER_COUNT - 1)) + 4);
+            }
 
             for (int day=0; day<Config.WEEKDAYS; day++) {
-                message += (AssignedShifts[day]? "1" : "0").ToString().PadRight(4);
+                message += (AssignedShifts[day]? "1" : "0") + delimiter;
             }
-            message = message.TrimEnd();
-            return message;
+            return message.TrimEnd(delimiter.ToCharArray());
         }
 
         public void RecalculateFitness() {

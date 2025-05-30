@@ -44,7 +44,7 @@
             }
         }
 
-        public string RequiredToString() {
+        public string FormattedToString() {
             int workerCountPadding = (int)Math.Floor(Math.Log10(CFG.WORKER_COUNT-1)) + 2;
             string message = "Willingness to work\n" + new string(' ', workerCountPadding+2);
             for(int day=1; day<=Config.WEEKDAYS; day++) {
@@ -52,7 +52,7 @@
             }
             message = message.TrimEnd() + "\n";
             foreach(Worker worker in WorkersTable) {
-                message += worker.WillingnessToString()+"\n";
+                message += worker.WillingnessToString("   ")+"\n";
             }
             message += "\nRequirements\n"+new string(' ', 4);
 
@@ -72,10 +72,22 @@
             message = message.TrimEnd() + "\n";
 
             foreach(Worker worker in WorkersTable) {
-                message += worker.ShiftsToString() + "\n";
+                message += worker.ShiftsToString("   ") + "\n";
             }
 
-            return message;
+            return message+"\n";
+        }
+
+        public string ToCSVString() {
+            string message = String.Join(',', NEEDED_SHIFTS)+",";
+            foreach(Worker worker in WorkersTable) {
+                message += worker.WillingnessToString(",", false)+",";
+            }
+            foreach(Worker worker in WorkersTable) {
+                message += worker.ShiftsToString(",", false)+",";
+            }
+
+            return message.TrimEnd(',');
         }
 
         public void ForceFeasibility() {
@@ -177,6 +189,11 @@
             return fitness;
         }
 
+        public void GenerateBlankWorkers() {
+            for (int i = 0; i < WorkersTable.Length; i++) {
+                WorkersTable[i] = new Worker(i, new bool[Config.WEEKDAYS]);
+            }
+        }
 
         public void RandomizeWorkers() {
             for (int i = 0; i < WorkersTable.Length; i++) {

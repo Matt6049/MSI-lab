@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35818.85
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Genetic Algorithm", "MSI refactor attempt\Genetic Algorithm.csproj", "{282AF9B9-1E1D-44B4-B904-4E0B3A58E2FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestingEnvironment", "TestingEnvironment\TestingEnvironment.csproj", "{5E647BD8-9394-4276-9C88-C82DBA135102}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{282AF9B9-1E1D-44B4-B904-4E0B3A58E2FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{282AF9B9-1E1D-44B4-B904-4E0B3A58E2FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{282AF9B9-1E1D-44B4-B904-4E0B3A58E2FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E647BD8-9394-4276-9C88-C82DBA135102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E647BD8-9394-4276-9C88-C82DBA135102}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E647BD8-9394-4276-9C88-C82DBA135102}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E647BD8-9394-4276-9C88-C82DBA135102}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

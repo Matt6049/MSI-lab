@@ -12,11 +12,14 @@ namespace Genetic_Algorithm {
 
 
         public const int WEEKDAYS = 7;
-        public int WORKER_COUNT { get; private set; } = 5;
+        public int WORKER_COUNT { get; private set; } = 3;
         public int GENERATION_CAP { get; private set; } = 1000;
 
         public class ProgramConfig {
+            public bool RUN_GENETIC_ALGORITHM { get; private set; } = false;
             public bool PRINT_GENERATION_STATISTICS { get; private set; } = true;
+            public bool SAVING_TO_CSV { get; private set; } = true;
+            public int REPEAT_COUNT { get; private set; } = 30;
             public int SCHEDULE_COUNT { get; private set; } = 50;
             public int PARENT_COUNT { get; private set; } = 3;
             public double ELITISM_RATIO { get; private set; } = 0.05;
@@ -31,7 +34,7 @@ namespace Genetic_Algorithm {
         public class ScheduleConfig {
             public double RANDOM_MUTATION_RATIO { get; private set; } = 2;
             public double POINT_BY_POINT_RATIO { get; private set; } = 0.5;
-            public double[] SHIFT_PROPORTIONS { get; private set; } = [0.8, 0.8, 0.8, 0.8, 0.8, 0.6, 0.4];
+            public double[] SHIFT_PROPORTIONS { get; private set; } = [0.6, 0.6, 0.6, 0.6, 0.6, 0.4, 0.3];
         }
 
         public class WorkerConfig {
@@ -46,6 +49,8 @@ namespace Genetic_Algorithm {
             public double MUTATION_CHANCE { get; private set; } = 0.2;
 
             //preferences
+            public bool GENERATE_NEW { get; private set; } = true;
+
             public int MAX_WORKDAYS { get; private set; } = 5;
             public int MAX_DISLIKED_DAYS { get; private set; } = 3;
             public double DISLIKED_CHANCE { get; private set; } = 0.65;
